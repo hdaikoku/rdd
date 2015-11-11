@@ -5,6 +5,7 @@
 #ifndef SLAVERDD_MAP_REDUCE_H
 #define SLAVERDD_MAP_REDUCE_H
 
+#include <memory>
 #include <vector>
 #include <unordered_map>
 

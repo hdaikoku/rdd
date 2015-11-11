@@ -16,4 +16,4 @@ add_executable(MasterRDD ${MASTER_SOURCE_FILES} ${COMMON_SOURCE_FILES})
 add_executable(SlaveRDD ${SLAVE_SOURCE_FILES} ${COMMON_SOURCE_FILES})
 
 target_link_libraries(MasterRDD msgpack jubatus_mpio jubatus_msgpack-rpc)
-target_link_libraries(SlaveRDD msgpack jubatus_mpio jubatus_msgpack-rpc)
+target_link_libraries(SlaveRDD msgpack jubatus_mpio jubatus_msgpack-rpc dl)
