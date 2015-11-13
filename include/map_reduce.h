@@ -13,7 +13,9 @@ template<typename K, typename V, typename IV>
 class MapReduce {
  public:
   MapReduce() { }
-  virtual ~MapReduce() { }
+  virtual ~MapReduce() {
+    std::cout << "destroying MapReduce..." << std::endl;
+  }
 
   virtual void Map(std::unordered_map<K, std::vector<V>> &kvs, const IV &value) = 0;
   virtual std::pair<K, V> Reduce(const K &key, const std::vector<V> &values) = 0;

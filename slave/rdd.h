@@ -10,6 +10,8 @@
 
 class Rdd {
  public:
+  Rdd() { }
+  virtual ~Rdd() { }
   //virtual std::unique_ptr<KeyValuesRdd<>> Map(const std::string &dl_filename) = 0;
   //virtual std::unique_ptr<KeyValuesRdd<>> Reduce(const std::string &dl_filename) = 0;
 

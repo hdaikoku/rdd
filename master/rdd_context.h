@@ -13,7 +13,8 @@ class RddContext {
  public:
   RddContext(const std::string &master_addr, const std::vector<std::pair<std::string, int>> &slaves)
       : master_addr_(master_addr), slaves_(slaves) {
-    default_chunk_size_ = 128 * 1024 * 1024;
+    // default size of chunks: 128 MB
+    default_chunk_size_ = (1 << 27);
     last_rdd_id_ = 0;
   }
 
@@ -41,10 +42,23 @@ class RddContext {
     return s_pool_.get_session(slaves_[dest].first, slaves_[dest].second).call(func, a1, a2, a3);
   }
 
+  // Calls with four args
+  template<typename A1, typename A2, typename A3, typename A4>
+  msgpack::rpc::future Call(const std::string &func,
+                            const int &dest,
+                            const A1 &a1,
+                            const A2 &a2,
+                            const A3 &a3,
+                            const A4 &a4) {
+    return s_pool_.get_session(slaves_[dest].first, slaves_[dest].second).call(func, a1, a2, a3, a4);
+  }
+
   // Calls all the endpoints
   bool CallAll(const std::string &func);
 
   int GetNewRddId();
+
+  std::string GetSlaveAddrById(const int &id);
 
   std::unique_ptr<TextRddStub> TextFile(const std::string &filename);
 

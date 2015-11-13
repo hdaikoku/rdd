@@ -35,9 +35,9 @@ class TextRdd: public Rdd {
       return nullptr;
     }
 
-    const auto &map_reduce = create_map_reduce();
+    auto map_reduce = create_map_reduce();
 
-    std::unordered_map<std::string, std::vector<int>> kvs;
+    std::unordered_map<K, std::vector<V>> kvs;
     std::istringstream str_stream(text_);
     std::string line;
 
@@ -45,6 +45,7 @@ class TextRdd: public Rdd {
       map_reduce->Map(kvs, line);
     }
 
+    map_reduce.release();
     dlclose(handle);
     return std::unique_ptr<KeyValuesRdd<K, V>>(new KeyValuesRdd<K, V>(kvs));
   }

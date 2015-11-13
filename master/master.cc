@@ -11,14 +11,17 @@ using namespace msgpack;
 
 int main(int argc, const char **argv) {
   vector<pair<string, int>> slaves;
-  slaves.push_back(make_pair("localhost", 50090));
-  slaves.push_back(make_pair("localhost", 50091));
-  slaves.push_back(make_pair("localhost", 50092));
+  slaves.push_back(make_pair("127.0.0.1", 50090));
+  slaves.push_back(make_pair("127.0.0.1", 50091));
+  slaves.push_back(make_pair("127.0.0.1", 50092));
+  slaves.push_back(make_pair("127.0.0.1", 50093));
 
   RddContext rc("localhost", slaves);
   rc.Init();
-  rc.TextFile("/Users/HDaikoku/Desktop/shared/256.txt")->Map(
-      "/Users/HDaikoku/ClionProjects/RDD/examples/libWordCount.dylib");
+  rc.TextFile("/home/hdaikoku/Desktop/shared/512.txt")
+      ->Map("/home/hdaikoku/ClionProjects/rdd/examples/libWordCount.so")
+      ->Reduce("/home/hdaikoku/ClionProjects/rdd/examples/libWordCount.so")
+      ->Print();
 
   return 0;
 }

@@ -3,61 +3,154 @@
 //
 
 #include "executor.h"
-#include "rdd_rpc.h"
 #include "text_rdd.h"
 
 void Executor::dispatch(msgpack::rpc::request req) {
   std::string method;
 
   req.method().convert(&method);
-
   try {
     if (method == "hello") {
-      msgpack::type::tuple<int> id;
-
-      req.params().convert(&id);
-      SetExecutorId(id.get<0>());
-
-      req.result(std::string("ok"));
+      // initial greeting
+      req.result(Hello(req));
 
     } else if (method == "distribute") {
-      std::cout << "distribute called" << std::endl;
-
-      msgpack::type::tuple<int, std::string> params;
-      req.params().convert(&params);
-
-      std::cout << "received: " << params.get<1>().length() << std::endl;
-
-      CreateTextRdd(params.get<0>(), params.get<1>());
-
-      req.result(rdd_rpc::Response::OK);
+      // create Text RDD from received text
+      req.result(DistributeText(req));
+      
     } else if (method == "map") {
-      std::cout << "map called" << std::endl;
+      // Map specified RDD
+      req.result(Map(req));
 
-      msgpack::type::tuple<int, std::string, int> params;
-      req.params().convert(&params);
+    } else if (method == "shuffle_srv") {
+      // shuffle, act as a server
+      req.result(ShuffleSrv(req));
 
-      int rdd_id = params.get<0>();
-      std::string dl_filename = params.get<1>();
-      int new_rdd_id = params.get<2>();
+    } else if (method == "shuffle_cli") {
+      // shuffle, act as a client
+      req.result(ShuffleCli(req));
 
-      for (auto &rdd : rdds_[rdd_id]) {
-        rdds_[new_rdd_id].push_back(
-            static_cast<TextRdd *>(rdd.get())->Map<std::string, int>(dl_filename)
-        );
-      }
+    } else if (method == "reduce") {
+      // reduce
+      req.result(Reduce(req));
 
-      req.result(rdd_rpc::Response::OK);
+    } else if (method == "print") {
+      // print key-values
+      req.result(Print(req));
 
     } else {
+      // there is no such methods
       req.error(msgpack::rpc::NO_METHOD_ERROR);
     }
+
   } catch (msgpack::type_error &e) {
     std::cerr << "ERROR: " << std::endl;
     req.error(msgpack::rpc::ARGUMENT_ERROR);
   }
 }
 
+
+rdd_rpc::Response Executor::Hello(msgpack::rpc::request &req) {
+  std::cout << "hello called" << std::endl;
+  int id;
+
+  ParseParams(req, id);
+  SetExecutorId(id);
+
+  return rdd_rpc::Response::OK;
+}
+
+rdd_rpc::Response Executor::DistributeText(msgpack::rpc::request &req) {
+  std::cout << "distribute called" << std::endl;
+
+  int rdd_id;
+  std::string text;
+  ParseParams(req, rdd_id, text);
+  CreateTextRdd(rdd_id, text);
+
+  std::cout << "received: " << text.length() << std::endl;
+  return rdd_rpc::Response::OK;
+}
+
+rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
+  std::cout << "map called" << std::endl;
+
+  int rdd_id, new_rdd_id;
+  std::string dl_filename;
+  ParseParams(req, rdd_id, dl_filename, new_rdd_id);
+
+  for (auto &rdd : rdds_[rdd_id]) {
+    rdds_[new_rdd_id].push_back(
+        static_cast<TextRdd *>(rdd.get())->Map<std::string, int>(dl_filename)
+    );
+  }
+
+  return rdd_rpc::Response::OK;
+}
+
+rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
+  std::cout << "shuffle_srv called" << std::endl;
+
+  int rdd_id, dest_id, n_reducers;
+  ParseParams(req, rdd_id, dest_id, n_reducers);
+
+  for (auto &rdd : rdds_[rdd_id]) {
+    // TODO dirty hack :)
+    if (!static_cast<KeyValuesRdd<std::string, int> *>(rdd.get())->ShuffleServer(dest_id, n_reducers, data_port_)) {
+      return rdd_rpc::Response::ERR;
+    }
+  }
+
+  return rdd_rpc::Response::OK;
+}
+
+rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
+  std::cout << "shuffle_cli called" << std::endl;
+
+  std::string dest;
+  int rdd_id, dest_id, n_reducers;
+  ParseParams(req, rdd_id, dest, dest_id, n_reducers);
+
+  for (auto &rdd : rdds_[rdd_id]) {
+    // TODO dirty hack :)
+    if (!static_cast<KeyValuesRdd<std::string, int> *>(rdd.get())->ShuffleClient(dest, dest_id, n_reducers)) {
+      return rdd_rpc::Response::ERR;
+    }
+  }
+
+  return rdd_rpc::Response::OK;
+}
+
+rdd_rpc::Response Executor::Reduce(msgpack::rpc::request &req) {
+  std::cout << "reduce called" << std::endl;
+
+  int rdd_id, new_rdd_id;
+  std::string dl_filename;
+  ParseParams(req, rdd_id, dl_filename, new_rdd_id);
+
+  for (auto &rdd : rdds_[rdd_id]) {
+    // TODO dirty hack :)
+    rdds_[new_rdd_id].push_back(
+        static_cast<KeyValuesRdd<std::string, int> *>(rdd.get())->Reduce(dl_filename)
+    );
+  }
+
+  return rdd_rpc::Response::OK;
+}
+
+rdd_rpc::Response Executor::Print(msgpack::rpc::request &req) {
+  std::cout << "print called" << std::endl;
+
+  int rdd_id;
+  ParseParams(req, rdd_id);
+
+  for (auto &rdd : rdds_[rdd_id]) {
+    // TODO dirty hack :)
+    static_cast<KeyValuesRdd<std::string, int> *>(rdd.get())->PrintPairs();
+  }
+
+  return rdd_rpc::Response::OK;
+}
 
 void Executor::SetExecutorId(int id) {
   id_ = id;
@@ -67,3 +160,4 @@ void Executor::SetExecutorId(int id) {
 void Executor::CreateTextRdd(const int rdd_id, const std::string &data) {
   rdds_[rdd_id].push_back(std::unique_ptr<TextRdd>(new TextRdd(data)));
 }
+

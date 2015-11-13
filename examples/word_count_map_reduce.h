@@ -10,6 +10,7 @@
 
 class WordCountMapReduce: public MapReduce<std::string, int, std::string> {
  public:
+
   virtual void Map(std::unordered_map<std::string, std::vector<int>> &kvs, const std::string &value) override;
   virtual std::pair<std::string, int> Reduce(const std::string &key, const std::vector<int> &values) override;
 };

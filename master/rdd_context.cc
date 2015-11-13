@@ -26,7 +26,7 @@ void RddContext::Init() {
 
   i = 0;
   for (auto f : fs) {
-    if (f.get<std::string>() != "ok") {
+    if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
       std::cerr << "could not connect to " << slaves_[i].first << ":" << slaves_[i].second << std::endl;
     }
     i++;
@@ -70,7 +70,6 @@ std::unique_ptr<TextRddStub> RddContext::TextFile(const std::string &filename) {
       ifs.ignore(default_chunk_size_, '\n');
     }
 
-    std::cout << "From: " << ifs.tellg();
     ifs.read(buf.get(), default_chunk_size_);
     buf[ifs.gcount()] = '\0';
 
@@ -96,4 +95,8 @@ std::unique_ptr<TextRddStub> RddContext::TextFile(const std::string &filename) {
   }
 
   return std::unique_ptr<TextRddStub>(new TextRddStub(this, rdd_id, owners));
+}
+
+std::string RddContext::GetSlaveAddrById(const int &id) {
+  return slaves_[id].first;
 }

@@ -14,10 +14,12 @@ class KeyValuesRddStub: public RddStub {
 
   KeyValuesRddStub(RddContext *rc_, int rdd_id_, const std::set<int> &owners_) : RddStub(rc_, rdd_id_, owners_) { }
 
-  std::unique_ptr<KeyValuesRddStub> Reduce(const std::string &func_str);
+  std::unique_ptr<KeyValuesRddStub> Reduce(const std::string &dl_filename);
+
+  void Print();
 
  private:
-  void Shuffle();
+  bool Shuffle();
 };
 
 

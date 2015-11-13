@@ -9,8 +9,21 @@ include_directories(/usr/local/opt/msgpack059/include include)
 link_directories(/usr/local/opt/msgpack059/lib)
 
 set(COMMON_SOURCE_FILES include/rdd_rpc.h include/map_reduce.h)
-set(MASTER_SOURCE_FILES master/master.cc master/rdd_context.cc master/rdd_context.h master/rdd_stub.cc master/rdd_stub.h master/text_rdd_stub.cc master/text_rdd_stub.h master/key_values_rdd_stub.cc master/key_values_rdd_stub.h)
-set(SLAVE_SOURCE_FILES slave/slave.cc slave/executor.cc slave/executor.h slave/rdd.cc slave/rdd.h slave/text_rdd.cc slave/text_rdd.h slave/key_values_rdd.cc slave/key_values_rdd.h)
+set(MASTER_SOURCE_FILES
+        master/master.cc
+        master/rdd_context.cc master/rdd_context.h
+        master/rdd_stub.cc master/rdd_stub.h
+        master/text_rdd_stub.cc master/text_rdd_stub.h
+        master/key_values_rdd_stub.cc master/key_values_rdd_stub.h)
+set(SLAVE_SOURCE_FILES
+        slave/slave.cc
+        slave/executor.cc slave/executor.h
+        slave/rdd.cc slave/rdd.h
+        slave/text_rdd.cc slave/text_rdd.h
+        slave/key_values_rdd.h
+        socket/socket_common.h socket/socket_common.cc
+        socket/socket_server.h socket/socket_server.cc
+        socket/socket_client.h socket/socket_client.cc)
 
 add_executable(MasterRDD ${MASTER_SOURCE_FILES} ${COMMON_SOURCE_FILES})
 add_executable(SlaveRDD ${SLAVE_SOURCE_FILES} ${COMMON_SOURCE_FILES})
