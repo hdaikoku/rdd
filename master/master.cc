@@ -58,15 +58,15 @@ int main(int argc, const char **argv) {
   reduced->Print();
 
   cout << "TextFile: "
-      << chrono::duration_cast<chrono::milliseconds>(end_text_file - start_text_file).count()
+      << chrono::duration_cast<chrono::milliseconds>(end_text_file - start_text_file).count() / 1000.
       << " s" << endl;
 
   cout << "Map: "
-      << chrono::duration_cast<chrono::milliseconds>(end_map - start_map).count()
+      << chrono::duration_cast<chrono::milliseconds>(end_map - start_map).count() / 1000.
       << " s" << endl;
 
   cout << "Reduce: "
-      << chrono::duration_cast<chrono::milliseconds>(end_reduce - start_reduce).count()
+      << chrono::duration_cast<chrono::milliseconds>(end_reduce - start_reduce).count() / 1000.
       << " s" << endl;
 
   return 0;

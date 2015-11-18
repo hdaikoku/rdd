@@ -14,7 +14,7 @@ class RddContext {
   RddContext(const std::string &master_addr, const std::vector<std::pair<std::string, int>> &slaves)
       : master_addr_(master_addr), slaves_(slaves) {
     // default size of chunks: 128 MB
-    default_chunk_size_ = (1 << 27);
+    default_chunk_size_ = (1 << 26);
     last_rdd_id_ = 0;
   }
 
