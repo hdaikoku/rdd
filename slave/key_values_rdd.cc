@@ -83,8 +83,6 @@ bool KeyValuesRdd<K, V>::ShuffleClient(const std::string &dst, int dest_id, int 
   int port = 60090 + dest_id;
   SocketClient client(dst, std::to_string(port));
 
-  sleep(3);
-
   if ((sock_fd = client.Connect()) < 0) {
     std::cerr << "could not connect to: " << dst << ":" << port << std::endl;
     return false;
