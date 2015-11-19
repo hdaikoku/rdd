@@ -12,8 +12,10 @@ void WordCountMapReduce::Map(std::unordered_map<std::string, std::vector<int>> &
   std::istringstream iss(value);
 
   while (iss >> word) {
-    kvs[word].push_back(1);
-    //std::cout << word << ": 1" << std::endl;
+    if (kvs.find(word) == kvs.end()) {
+      kvs[word].push_back(0);
+    }
+    kvs[word][0] += 1;
   }
 
 }
