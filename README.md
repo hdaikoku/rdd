@@ -1,6 +1,6 @@
-# C++RDD #
+# C++RDD 
 
-A C++ implementation of RDD (Resilient Distributed Datasets).
+A C++ implementation of [RDD](https://www.usenix.org/system/files/conference/nsdi12/nsdi12-final138.pdf) (Resilient Distributed Datasets).
 
 ### Requirements ###
 
