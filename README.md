@@ -1,6 +1,6 @@
 # C++RDD #
 
-C++ implementation of RDD (Resilient Distributed Datasets).
+A C++ implementation of RDD (Resilient Distributed Datasets).
 
 ### Requirements ###
 
