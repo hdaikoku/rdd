@@ -5,49 +5,23 @@
 #include <fstream>
 #include <jubatus/msgpack/rpc/client.h>
 #include "rdd_context.h"
-#include "rdd_rpc.h"
+#include "../conn/rdd_rpc.h"
 
 void RddContext::Init() {
-  int i = 0;
-  int n_slaves = slaves_.size();
-//  signal(SIGPIPE, SIG_IGN);
-
-  s_pool_.set_pool_size_limit(n_slaves);
+  sp_.set_pool_size_limit(n_slaves_);
 
   std::vector<msgpack::rpc::future> fs;
-  for (auto s : slaves_) {
-    msgpack::rpc::session session = s_pool_.get_session(s.first, s.second);
-
-    std::cout << "calling " << s.first << ":" << s.second << std::endl;
-    fs.push_back(session.call("hello", i));
-
-    i++;
+  int slave_id;
+  for (slave_id = 0; slave_id < n_slaves_; slave_id++) {
+    fs.push_back(Call("hello", slave_id, slave_id));
   }
 
-  i = 0;
-  for (auto f : fs) {
-    if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
-      std::cerr << "could not connect to " << slaves_[i].first << ":" << slaves_[i].second << std::endl;
-    }
-    i++;
-  }
-}
-
-bool RddContext::CallAll(const std::string &func) {
-  std::vector<msgpack::rpc::future> fs;
-  bool ret = true;
-
-  for (auto slave : slaves_) {
-    fs.push_back(s_pool_.get_session(slave.first, slave.second).call(func));
-  }
-
-  for (auto f : fs) {
-    if (f.get<std::string>() != "ok") {
-      ret = false;
+  for (slave_id = 0; slave_id < n_slaves_; slave_id++) {
+    if (fs[slave_id].get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
+      std::cerr << "could not connect to "
+          << slaves_[slave_id].first << ":" << slaves_[slave_id].second << std::endl;
     }
   }
-
-  return ret;
 }
 
 // Returns new RDD id
@@ -61,7 +35,7 @@ std::unique_ptr<TextRddStub> RddContext::TextFile(const std::string &filename) {
   std::vector<msgpack::rpc::future> fs;
   std::unique_ptr<char[]> buf(new char[default_chunk_size_ + 1]);
   std::set<int> owners;
-  int owner = 0;
+  int owner;
   int rdd_id = GetNewRddId();
 
   while (!ifs.eof()) {
@@ -79,17 +53,18 @@ std::unique_ptr<TextRddStub> RddContext::TextFile(const std::string &filename) {
       last_line.append("\n");
     }
 
-    msgpack::rpc::session session = s_pool_.get_session(slaves_[owner].first, slaves_[owner].second);
-    fs.push_back(session.call("distribute", rdd_id, std::string(buf.get()).append(last_line)));
+    owner = next_dst_id_++ % n_slaves_;
+
+    fs.push_back(Call("distribute", owner, rdd_id, std::string(buf.get()).append(last_line)));
 
     owners.insert(owner);
-    owner++;
   }
 
   int i = 0;
   for (auto f : fs) {
     if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
-      std::cerr << "could not distribute to " << slaves_[i].first << ":" << slaves_[i].second << std::endl;
+      std::cerr << "could not distribute to "
+          << slaves_[i].first << ":" << slaves_[i].second << std::endl;
     }
     i++;
   }
