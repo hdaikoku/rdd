@@ -6,7 +6,7 @@ A C++ implementation of [RDD](https://www.usenix.org/system/files/conference/nsd
 
 * gcc/g++ 4.8 or above
 * CMake 2.8 or above
-* jubitus-msgpack: https://github.com/jubatus/jubatus-msgpack-rpc/tree/master/cpp
+* [jubitus-msgpack-rpc](https://github.com/jubatus/jubatus-msgpack-rpc/tree/master/cpp)
 
 ### Operators Currently Available ###
 
