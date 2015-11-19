@@ -7,14 +7,9 @@ A C++ implementation of [RDD](https://www.usenix.org/system/files/conference/nsd
 * gcc/g++ 4.8 or above
 * jubitus-msgpack: https://github.com/jubatus/jubatus-msgpack-rpc/tree/master/cpp
 
-### How do I get set up? ###
+### Operators currently available ###
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+* MapReduce
 
 ### Contribution guidelines ###
 
