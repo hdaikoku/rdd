@@ -5,17 +5,19 @@ A C++ implementation of [RDD](https://www.usenix.org/system/files/conference/nsd
 ### Requirements ###
 
 * gcc/g++ 4.8 or above
+* CMake 2.8 or above
 * jubitus-msgpack: https://github.com/jubatus/jubatus-msgpack-rpc/tree/master/cpp
 
-### Operators currently available ###
+### Operators Currently Available ###
 
 * MapReduce
 
-### Contribution guidelines ###
+### How to Build ###
 
-* Writing tests
-* Code review
-* Other guidelines
+```
+$ cmake .
+$ make
+```
 
 ### Who do I talk to? ###
 
