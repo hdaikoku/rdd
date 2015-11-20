@@ -5,7 +5,7 @@
 #include <fstream>
 #include <jubatus/msgpack/rpc/client.h>
 #include "rdd_context.h"
-#include "../conn/rdd_rpc.h"
+#include "../include/rdd_rpc.h"
 
 void RddContext::Init() {
   sp_.set_pool_size_limit(n_slaves_);
