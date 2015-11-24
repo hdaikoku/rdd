@@ -7,11 +7,11 @@
 
 #include <string>
 #include <jubatus/msgpack/rpc/session_pool.h>
-#include "text_rdd_stub.h"
+#include "key_value_rdd_stub.h"
 
-class RddContext {
+class RDDContext {
  public:
-  RddContext(const std::string &master_addr, const std::vector<std::pair<std::string, int>> &slaves)
+  RDDContext(const std::string &master_addr, const std::vector<std::pair<std::string, int>> &slaves)
       : master_addr_(master_addr), slaves_(slaves) {
     // default size of chunks: 128 MB
     default_chunk_size_ = (1 << 27);
@@ -20,7 +20,7 @@ class RddContext {
     n_slaves_ = slaves_.size();
   }
 
-  virtual ~RddContext() {
+  virtual ~RDDContext() {
     sp_.end();
   }
 
@@ -60,7 +60,7 @@ class RddContext {
 
   std::string GetSlaveAddrById(const int &id);
 
-  std::unique_ptr<TextRddStub> TextFile(const std::string &filename);
+  std::unique_ptr<KeyValueRDDStub> TextFile(const std::string &filename);
 
  private:
   std::string master_addr_;

@@ -2,6 +2,7 @@
 // Created by hdaikoku on 15/11/10.
 //
 
+#include <errno.h>
 #include <netdb.h>
 #include <fcntl.h>
 

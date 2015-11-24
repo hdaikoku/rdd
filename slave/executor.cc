@@ -2,8 +2,10 @@
 // Created by Harunobu Daikoku on 2015/10/29.
 //
 
+#include <sstream>
 #include "executor.h"
-#include "text_rdd.h"
+#include "key_value_rdd.h"
+#include "key_values_rdd.h"
 
 void Executor::dispatch(msgpack::rpc::request req) {
   std::string method;
@@ -15,7 +17,7 @@ void Executor::dispatch(msgpack::rpc::request req) {
       req.result(Hello(req));
 
     } else if (method == "distribute") {
-      // create Text RDD from received text
+      // create KeyValueRDD from received text
       req.result(DistributeText(req));
       
     } else if (method == "map") {
@@ -61,12 +63,22 @@ rdd_rpc::Response Executor::Hello(msgpack::rpc::request &req) {
 }
 
 rdd_rpc::Response Executor::DistributeText(msgpack::rpc::request &req) {
-  std::cout << "distribute called" << std::endl;
+  std::cout << "distribute_text called" << std::endl;
 
   int rdd_id;
   std::string text;
+  std::string line;
+  std::unordered_map<int, std::string> kvs;
+
   ParseParams(req, rdd_id, text);
-  CreateTextRdd(rdd_id, text);
+
+  std::istringstream stream(text);
+  while (std::getline(stream, line)) {
+    kvs.insert(std::make_pair(stream.tellg(), line));
+  }
+
+  rdds_[rdd_id].push_back(
+      std::unique_ptr<KeyValueRDD<int, std::string>>(new KeyValueRDD<int, std::string>(kvs)));
 
   std::cout << "received: " << text.length() << std::endl;
   return rdd_rpc::Response::OK;
@@ -81,7 +93,7 @@ rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
 
   for (auto &rdd : rdds_[rdd_id]) {
     rdds_[new_rdd_id].push_back(
-        static_cast<TextRdd *>(rdd.get())->Map<std::string, int>(dl_filename)
+        static_cast<KeyValueRDD<int, std::string> *>(rdd.get())->Map<std::string, int>(dl_filename)
     );
   }
 
@@ -96,7 +108,7 @@ rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
 
   for (auto &rdd : rdds_[rdd_id]) {
     // TODO dirty hack :)
-    if (!static_cast<KeyValuesRdd<std::string, int> *>(rdd.get())->ShuffleServer(dest_id, n_reducers, data_port_)) {
+    if (!static_cast<KeyValuesRDD<std::string, int> *>(rdd.get())->ShuffleServer(dest_id, n_reducers, data_port_)) {
       return rdd_rpc::Response::ERR;
     }
   }
@@ -113,7 +125,7 @@ rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
 
   for (auto &rdd : rdds_[rdd_id]) {
     // TODO dirty hack :)
-    if (!static_cast<KeyValuesRdd<std::string, int> *>(rdd.get())->ShuffleClient(dest, dest_id, n_reducers)) {
+    if (!static_cast<KeyValuesRDD<std::string, int> *>(rdd.get())->ShuffleClient(dest, dest_id, n_reducers)) {
       return rdd_rpc::Response::ERR;
     }
   }
@@ -131,7 +143,7 @@ rdd_rpc::Response Executor::Reduce(msgpack::rpc::request &req) {
   for (auto &rdd : rdds_[rdd_id]) {
     // TODO dirty hack :)
     rdds_[new_rdd_id].push_back(
-        static_cast<KeyValuesRdd<std::string, int> *>(rdd.get())->Reduce(dl_filename)
+        static_cast<KeyValuesRDD<std::string, int> *>(rdd.get())->Reduce<std::string, int>(dl_filename)
     );
   }
 
@@ -145,8 +157,7 @@ rdd_rpc::Response Executor::Print(msgpack::rpc::request &req) {
   ParseParams(req, rdd_id);
 
   for (auto &rdd : rdds_[rdd_id]) {
-    // TODO dirty hack :)
-    static_cast<KeyValuesRdd<std::string, int> *>(rdd.get())->PrintPairs();
+    rdd.get()->Print();
   }
 
   return rdd_rpc::Response::OK;
@@ -156,8 +167,3 @@ void Executor::SetExecutorId(int id) {
   id_ = id;
   std::cout << "my executor_id: " << id_ << std::endl;
 }
-
-void Executor::CreateTextRdd(const int rdd_id, const std::string &data) {
-  rdds_[rdd_id].push_back(std::unique_ptr<TextRdd>(new TextRdd(data)));
-}
-

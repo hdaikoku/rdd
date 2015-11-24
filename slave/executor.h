@@ -27,7 +27,6 @@ class Executor: public msgpack::rpc::dispatcher {
   int id_;
   std::unordered_map<int, std::vector<std::unique_ptr<Rdd>>> rdds_;
 
-  void CreateTextRdd(const int rdd_id, const std::string &data);
   rdd_rpc::Response Hello(msgpack::rpc::request &req);
   rdd_rpc::Response DistributeText(msgpack::rpc::request &req);
   rdd_rpc::Response Map(msgpack::rpc::request &req);

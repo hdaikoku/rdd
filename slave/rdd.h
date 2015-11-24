@@ -12,6 +12,8 @@ class Rdd {
   Rdd() { }
   virtual ~Rdd() { }
 
+  virtual void Print() = 0;
+
  protected:
   void *LoadLib(const std::string &dl_filename);
   void *LoadFunc(void *handle, const std::string &func_name);

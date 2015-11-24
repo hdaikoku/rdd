@@ -29,8 +29,8 @@ static bool ReadConf(const char *conf_path, vector<pair<string, int>> &slaves) {
 }
 
 int main(int argc, const char **argv) {
-  if (argc != 4) {
-    cerr << "Usage: " << argv[0] << "[conf_path] [text_file] [map_reduce.so]" << endl;
+  if (argc != 5) {
+    cerr << "Usage: " << argv[0] << "[conf_path] [text_file] [mapper.so] [reducer.so]" << endl;
     return 1;
   }
 
@@ -40,7 +40,7 @@ int main(int argc, const char **argv) {
     return 1;
   }
 
-  RddContext rc("localhost", slaves);
+  RDDContext rc("localhost", slaves);
   rc.Init();
 
   auto start_text_file = chrono::steady_clock::now();
@@ -52,7 +52,7 @@ int main(int argc, const char **argv) {
   auto end_map = chrono::steady_clock::now();
 
   auto start_reduce = chrono::steady_clock::now();
-  auto reduced = mapped->Reduce(argv[3]);
+  auto reduced = mapped->Reduce(argv[4]);
   auto end_reduce = chrono::steady_clock::now();
 
   reduced->Print();

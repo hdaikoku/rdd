@@ -7,7 +7,7 @@
 #include "rdd_context.h"
 #include "../include/rdd_rpc.h"
 
-void RddContext::Init() {
+void RDDContext::Init() {
   sp_.set_pool_size_limit(n_slaves_);
 
   std::vector<msgpack::rpc::future> fs;
@@ -25,11 +25,11 @@ void RddContext::Init() {
 }
 
 // Returns new RDD id
-int RddContext::GetNewRddId() {
+int RDDContext::GetNewRddId() {
   return last_rdd_id_++;
 }
 
-std::unique_ptr<TextRddStub> RddContext::TextFile(const std::string &filename) {
+std::unique_ptr<KeyValueRDDStub> RDDContext::TextFile(const std::string &filename) {
   std::ifstream ifs(filename);
 
   std::vector<msgpack::rpc::future> fs;
@@ -69,9 +69,9 @@ std::unique_ptr<TextRddStub> RddContext::TextFile(const std::string &filename) {
     i++;
   }
 
-  return std::unique_ptr<TextRddStub>(new TextRddStub(this, rdd_id, owners));
+  return std::unique_ptr<KeyValueRDDStub>(new KeyValueRDDStub(this, rdd_id, owners));
 }
 
-std::string RddContext::GetSlaveAddrById(const int &id) {
+std::string RDDContext::GetSlaveAddrById(const int &id) {
   return slaves_[id].first;
 }

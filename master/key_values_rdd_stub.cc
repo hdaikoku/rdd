@@ -8,7 +8,7 @@
 
 #include "rdd_context.h"
 
-std::unique_ptr<KeyValuesRddStub> KeyValuesRddStub::Reduce(const std::string &dl_filename) {
+std::unique_ptr<KeyValueRDDStub> KeyValuesRDDStub::Reduce(const std::string &dl_filename) {
   Shuffle();
 
   std::vector<msgpack::rpc::future> fs;
@@ -24,11 +24,11 @@ std::unique_ptr<KeyValuesRddStub> KeyValuesRddStub::Reduce(const std::string &dl
     }
   }
 
-  return std::unique_ptr<KeyValuesRddStub>(new KeyValuesRddStub(rc_, new_rdd_id, owners_));
+  return std::unique_ptr<KeyValueRDDStub>(new KeyValueRDDStub(rc_, new_rdd_id, owners_));
 }
 
 // shuffles rdds by pairwise algorithm
-bool KeyValuesRddStub::Shuffle() {
+bool KeyValuesRDDStub::Shuffle() {
   bool ret = true;
   std::vector<msgpack::rpc::future> fs;
 
@@ -61,7 +61,8 @@ bool KeyValuesRddStub::Shuffle() {
 
   return ret;
 }
-void KeyValuesRddStub::Print() {
+
+void KeyValuesRDDStub::Print() {
   std::vector<msgpack::rpc::future> fs;
 
   for (auto o : owners_) {

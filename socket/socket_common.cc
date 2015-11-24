@@ -4,10 +4,8 @@
 
 
 #include <iostream>
-#include <memory>
 #include <netdb.h>
 #include <netinet/tcp.h>
-#include <string.h>
 
 #include "socket_common.h"
 
@@ -46,7 +44,7 @@ ssize_t SocketCommon::Write(int sock_fd, const void *buf, size_t len) const {
   ssize_t ret = 0;
 
   while (offset < len) {
-    ret = write(sock_fd, buf + offset, len - offset);
+    ret = write(sock_fd, (char *) buf + offset, len - offset);
     if (ret > 0) {
       offset += ret;
     } else {
@@ -81,7 +79,7 @@ ssize_t SocketCommon::Read(int sock_fd, void *buf, size_t len) const {
   ssize_t ret = 0;
 
   while (offset < len) {
-    ret = read(sock_fd, buf + offset, len - offset);
+    ret = read(sock_fd, (char *) buf + offset, len - offset);
     if (ret > 0) {
       offset += ret;
     } else {
