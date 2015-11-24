@@ -30,7 +30,7 @@ static bool ReadConf(const char *conf_path, vector<pair<string, int>> &slaves) {
 
 int main(int argc, const char **argv) {
   if (argc != 5) {
-    cerr << "Usage: " << argv[0] << "[conf_path] [text_file] [mapper.so] [reducer.so]" << endl;
+    cerr << "Usage: " << argv[0] << " [conf_path] [text_file] [mapper.so] [reducer.so]" << endl;
     return 1;
   }
 
