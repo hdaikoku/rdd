@@ -7,7 +7,7 @@
 #include <jubatus/msgpack/rpc/session_pool.h>
 #include <fstream>
 #include <sstream>
-#include "rdd_context.h"
+#include "master/rdd_context.h"
 
 using namespace std;
 

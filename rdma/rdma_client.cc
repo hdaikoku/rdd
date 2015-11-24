@@ -4,7 +4,7 @@
 
 #include <fcntl.h>
 #include <netdb.h>
-#include "rdma_client.h"
+#include "rdma/rdma_client.h"
 
 int RDMAClient::Connect() {
   struct rdma_addrinfo *result;

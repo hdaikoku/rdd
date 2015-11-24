@@ -4,9 +4,7 @@
 
 #include <rdd_rpc.h>
 #include <jubatus/msgpack/rpc/future.h>
-#include "key_values_rdd_stub.h"
-
-#include "rdd_context.h"
+#include "master/rdd_context.h"
 
 std::unique_ptr<KeyValueRDDStub> KeyValuesRDDStub::Reduce(const std::string &dl_filename) {
   Shuffle();

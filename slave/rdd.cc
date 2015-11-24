@@ -4,7 +4,7 @@
 
 #include <dlfcn.h>
 #include <iostream>
-#include "rdd.h"
+#include "slave/rdd.h"
 
 void *Rdd::LoadLib(const std::string &dl_filename) {
   const auto lib = dlopen(dl_filename.c_str(), RTLD_LAZY);

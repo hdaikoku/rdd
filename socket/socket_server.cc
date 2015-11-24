@@ -4,7 +4,7 @@
 
 #include <netdb.h>
 
-#include "socket_server.h"
+#include "socket/socket_server.h"
 
 bool SocketServer::Listen() {
   struct addrinfo *result;

@@ -12,6 +12,8 @@ class KeyValuesRDD;
 #include <tbb/tbb.h>
 #include <mapper.h>
 #include <dlfcn.h>
+#include <unordered_map>
+#include "rdd.h"
 
 template<typename K, typename V>
 class KeyValueRDD: public Rdd {

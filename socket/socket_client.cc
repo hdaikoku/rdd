@@ -6,7 +6,7 @@
 #include <netdb.h>
 #include <fcntl.h>
 
-#include "socket_client.h"
+#include "socket/socket_client.h"
 
 int SocketClient::Connect() {
   struct addrinfo *result;

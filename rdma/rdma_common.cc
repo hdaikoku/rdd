@@ -7,7 +7,7 @@
 #include <netdb.h>
 #include <netinet/tcp.h>
 #include <string.h>
-#include "rdma_common.h"
+#include "rdma/rdma_common.h"
 
 struct rdma_addrinfo *RDMACommon::InitSocket(const char *addr, const char *port, int flags) {
   struct rdma_addrinfo hints, *result;

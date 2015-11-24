@@ -4,7 +4,7 @@
 
 #include <jubatus/msgpack/rpc/future.h>
 #include "rdd_rpc.h"
-#include "rdd_context.h"
+#include "master/rdd_context.h"
 
 std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_filename) {
   std::vector<msgpack::rpc::future> fs;

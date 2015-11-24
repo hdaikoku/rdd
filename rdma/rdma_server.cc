@@ -3,7 +3,7 @@
 //
 
 #include <netdb.h>
-#include "rdma_server.h"
+#include "rdma/rdma_server.h"
 
 bool RDMAServer::Listen() {
   struct rdma_addrinfo *result;
