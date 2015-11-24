@@ -1,11 +1,11 @@
-# C++RDD 
+# RDD++
 
 A C++ implementation of [RDD](https://www.usenix.org/system/files/conference/nsdi12/nsdi12-final138.pdf) (Resilient Distributed Datasets).
 
 ## Requirements ##
 
-* gcc/g++ 4.8 or above
-* CMake 2.8 or above
+* clang or gcc/g++ 4.8+
+* CMake 2.8+
 * [jubitus-msgpack-rpc](https://github.com/jubatus/jubatus-msgpack-rpc/tree/master/cpp)
 
 ## Operators Currently Available ##
@@ -23,11 +23,10 @@ $ make
 
 1. Start slave(s)
 ```
-$ ./SlaveRDD [job_port] [data_port]
+$ ./slave/RDDSlave [job_port] [data_port]
 ```
-2.  Start master
+2.  Start your master application (e.g. WordCount)
 ```
-$ ./MasterRDD [path_to_slaves.conf] [...]
+$ ./examples/WordCount [path_to_slaves.conf] [path_to_text_file] [path_to_Mapper.so] [path_to_Reducer.so]
 ```
 
-## Example MapReduce Task ##
