@@ -6,6 +6,7 @@
 #include <iostream>
 #include <netdb.h>
 #include <netinet/tcp.h>
+#include <string.h>
 #include "socket/socket_common.h"
 
 struct addrinfo *SocketCommon::InitSocket(const char *addr, const char *port, int flags) {
