@@ -47,6 +47,8 @@ int main(int argc, const char **argv) {
   auto textFile = rc.TextFile(argv[2]);
   auto end_text_file = chrono::steady_clock::now();
 
+  auto start_mr = chrono::steady_clock::now();
+
   auto start_map = chrono::steady_clock::now();
   auto mapped = textFile->Map(argv[3]);
   auto end_map = chrono::steady_clock::now();
@@ -55,7 +57,11 @@ int main(int argc, const char **argv) {
   auto reduced = mapped->Reduce(argv[4]);
   auto end_reduce = chrono::steady_clock::now();
 
+  auto end_mr = chrono::steady_clock::now();
+
   reduced->Print();
+
+  cout << endl;
 
   cout << "TextFile: "
       << chrono::duration_cast<chrono::milliseconds>(end_text_file - start_text_file).count() / 1000.
@@ -67,6 +73,12 @@ int main(int argc, const char **argv) {
 
   cout << "Reduce: "
       << chrono::duration_cast<chrono::milliseconds>(end_reduce - start_reduce).count() / 1000.
+      << " s" << endl;
+
+  cout << endl;
+
+  cout << "Total MapReduce: "
+      << chrono::duration_cast<chrono::milliseconds>(end_mr - start_mr).count() / 1000.
       << " s" << endl;
 
   return 0;
