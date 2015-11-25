@@ -58,6 +58,11 @@ $ make
         .
         docker_slave_[num_of_slaves] 50090
     
+4. copy the target text file as "word_count.txt"
+
+    ```
+    $ cp [target_text_file] ./word_count.txt
+    ```
 
 4. Start master
 
@@ -65,7 +70,7 @@ $ make
     $ docker-compose --x-networking up master
     ```
 
-5. To see the outputs from slaves:
+6. To see the outputs from slaves:
 
     ```
     $ docker-compose logs
