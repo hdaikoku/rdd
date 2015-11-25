@@ -21,7 +21,8 @@ int main(int argc, const char **argv) {
   std::unique_ptr<rpc::dispatcher> dp(new Executor("localhost", job_port, data_port));
   job_server.serve(dp.get());
   job_server.listen("0.0.0.0", job_port);
-  job_server.run(4);
+  cout << "Now Listening on port: " << job_port << endl;
+  job_server.run(1);
 
   return 0;
 }
