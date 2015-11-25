@@ -1,0 +1,14 @@
+# slave
+slave:
+  image: rdd
+  ports:
+    - 50090
+    - 60090
+  command: ./slave/RDDSlave 50090 60090
+
+# master (WordCount)
+master:
+  image: rdd
+  volumes:
+    - .:/data
+  command: ./examples/WordCount /data/slaves.conf /data/word_count.txt ./lib/libWordCountMapper.so ./lib/libWordCountReducer.so
