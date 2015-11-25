@@ -24,7 +24,7 @@ int RDMAClient::Connect() {
   res = rconnect(sock_fd_, result->ai_dst_addr, result->ai_dst_len);
   if (res < 0) {
     if (errno == EINPROGRESS) {
-      timeout.tv_sec = 3;
+      timeout.tv_sec = 5;
       timeout.tv_usec = 0;
       FD_ZERO(&set);
       FD_SET(sock_fd_, &set);

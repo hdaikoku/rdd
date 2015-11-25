@@ -100,7 +100,7 @@ class KeyValuesRDD: public Rdd {
   bool ShuffleClient(const std::string &dst, int dest_id, int n_reducers) {
     int sock_fd;
     // TODO temporary hack for specifying port
-    int port = 60090 + dest_id;
+    int port = 60090;
     SocketClient client(dst, std::to_string(port));
 
     if ((sock_fd = client.Connect()) < 0) {
