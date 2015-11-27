@@ -6,6 +6,22 @@
 #include <jubatus/msgpack/rpc/future.h>
 #include "master/rdd_context.h"
 
+bool KeyValuesRDDStub::Combine(const std::string &dl_filename) {
+  std::vector<msgpack::rpc::future> fs;
+
+  for (auto o : owners_) {
+    fs.push_back(rc_->Call("combine", o, rdd_id_, dl_filename));
+  }
+
+  for (auto f : fs) {
+    if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 std::unique_ptr<KeyValueRDDStub> KeyValuesRDDStub::Reduce(const std::string &dl_filename) {
   Shuffle();
 

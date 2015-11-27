@@ -16,6 +16,8 @@ class KeyValuesRDDStub: public RDDStub {
 
   KeyValuesRDDStub(RDDContext *rc_, int rdd_id_, const std::set<int> &owners_) : RDDStub(rc_, rdd_id_, owners_) { }
 
+  bool Combine(const std::string &dl_filename);
+
   std::unique_ptr<KeyValueRDDStub> Reduce(const std::string &dl_filename);
 
   void Print();

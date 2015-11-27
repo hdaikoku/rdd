@@ -24,7 +24,9 @@ void Executor::dispatch(msgpack::rpc::request req) {
     } else if (method == "map") {
       // Map specified RDD
       req.result(Map(req));
+    } else if (method == "combine") {
 
+      req.result(Combine(req));
     } else if (method == "shuffle_srv") {
       // shuffle, act as a server
       req.result(ShuffleSrv(req));
@@ -109,6 +111,21 @@ rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
 
   rdds_[new_rdd_id] =
       static_cast<KeyValueRDD<int, std::string> *>(rdds_[rdd_id].get())->Map<std::string, int>(dl_filename);
+
+  return rdd_rpc::Response::OK;
+}
+
+rdd_rpc::Response Executor::Combine(msgpack::rpc::request &req) {
+  std::cout << "combine called" << std::endl;
+
+  int rdd_id;
+  std::string dl_filename;
+  ParseParams(req, rdd_id, dl_filename);
+
+  // TODO dirty hack :)
+  if (!static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id].get())->Combine(dl_filename)) {
+    return rdd_rpc::Response::ERR;
+  }
 
   return rdd_rpc::Response::OK;
 }

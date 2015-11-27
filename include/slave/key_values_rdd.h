@@ -30,6 +30,40 @@ class KeyValuesRDD: public RDD {
     }
   }
 
+  bool Combine(const std::string &dl_filename) {
+    void *handle = LoadLib(dl_filename);
+    if (handle == NULL) {
+      std::cerr << "dlopen" << std::endl;
+      return false;
+    }
+
+    const auto create_reducer
+        = reinterpret_cast<CreateReducer<K, V, K, V>>(LoadFunc(handle, "Create"));
+    if (create_reducer == nullptr) {
+      std::cerr << "dlsym" << std::endl;
+      dlclose(handle);
+      return false;
+    }
+
+    auto combiner = create_reducer();
+
+    tbb::concurrent_unordered_map<K, V> kvs;
+
+    tbb::parallel_for_each(key_values_, [&kvs, &combiner](const std::pair<K, std::vector<V>> &kv){
+      kvs.insert(combiner->Reduce(kv.first, kv.second));
+    });
+
+    key_values_.clear();
+    for (const auto &kv : kvs) {
+      key_values_[kv.first].push_back(kv.second);
+    }
+
+    combiner.release();
+    dlclose(handle);
+
+    return true;
+  }
+
   template<typename NK, typename NV>
   std::unique_ptr<KeyValueRDD<NK, NV>> Reduce(const std::string &dl_filename) {
     void *handle = LoadLib(dl_filename);
