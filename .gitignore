@@ -1,5 +1,6 @@
 # project-specific ignores
 docker/word_count.txt
+lib
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Emacs template
