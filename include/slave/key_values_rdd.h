@@ -48,12 +48,11 @@ class KeyValuesRDD: public RDD {
 
     auto reducer = create_reducer();
 
-    std::unordered_map<NK, NV> kvs;
+    tbb::concurrent_unordered_map<NK, NV> kvs;
 
-    for (auto kv : key_values_) {
-      auto reduced = reducer->Reduce(kv.first, kv.second);
-      kvs.insert(reduced);
-    }
+    tbb::parallel_for_each(key_values_, [&kvs, &reducer](const std::pair<K, std::vector<V>> &kv){
+      kvs.insert(reducer->Reduce(kv.first, kv.second));
+    });
 
     reducer.release();
     dlclose(handle);

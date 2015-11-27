@@ -23,6 +23,12 @@ class KeyValueRDD: public RDD {
 
   KeyValueRDD(const std::unordered_map<K, V> &key_values) : key_values_(key_values) { }
 
+  KeyValueRDD(const tbb::concurrent_unordered_map<K, V> &key_values) {
+    for (const auto &kv : key_values) {
+      key_values_[kv.first] = kv.second;
+    }
+  }
+
   void Insert(const K &key, const V &value) {
     key_values_.insert(std::make_pair(key, value));
   }
