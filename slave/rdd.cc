@@ -6,7 +6,7 @@
 #include <iostream>
 #include "slave/rdd.h"
 
-void *Rdd::LoadLib(const std::string &dl_filename) {
+void *RDD::LoadLib(const std::string &dl_filename) {
   const auto lib = dlopen(dl_filename.c_str(), RTLD_LAZY);
   if (!lib) {
     std::cerr << "Cannot load library: " << dlerror() << std::endl;
@@ -15,7 +15,7 @@ void *Rdd::LoadLib(const std::string &dl_filename) {
   return lib;
 }
 
-void *Rdd::LoadFunc(void *handle, const std::string &func_name) {
+void *RDD::LoadFunc(void *handle, const std::string &func_name) {
   const auto func = dlsym(handle, func_name.c_str());
   const auto dlsym_error = dlerror();
   if (dlsym_error) {

@@ -16,10 +16,16 @@ class KeyValuesRDD;
 #include "rdd.h"
 
 template<typename K, typename V>
-class KeyValueRDD: public Rdd {
+class KeyValueRDD: public RDD {
  public:
 
+  KeyValueRDD() {}
+
   KeyValueRDD(const std::unordered_map<K, V> &key_values) : key_values_(key_values) { }
+
+  void Insert(const K &key, const V &value) {
+    key_values_.insert(std::make_pair(key, value));
+  }
 
   template<typename NK, typename NV>
   std::unique_ptr<KeyValuesRDD<NK, NV>> Map(const std::string &dl_filename) {

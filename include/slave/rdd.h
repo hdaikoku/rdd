@@ -7,10 +7,10 @@
 
 #include <string>
 
-class Rdd {
+class RDD {
  public:
-  Rdd() { }
-  virtual ~Rdd() { }
+  RDD() { }
+  virtual ~RDD() { }
 
   virtual void Print() = 0;
 

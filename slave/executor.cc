@@ -65,22 +65,23 @@ rdd_rpc::Response Executor::Hello(msgpack::rpc::request &req) {
 rdd_rpc::Response Executor::DistributeText(msgpack::rpc::request &req) {
   std::cout << "distribute_text called" << std::endl;
 
-  int rdd_id;
-  std::string text;
-  std::string line;
-  std::unordered_map<int, std::string> kvs;
+  int rdd_id, offset;
+  std::string text, line;
 
-  ParseParams(req, rdd_id, text);
+  ParseParams(req, rdd_id, text, offset);
+
+  if (rdds_.find(rdd_id) == rdds_.end()) {
+    rdds_[rdd_id] = std::unique_ptr<KeyValueRDD<int, std::string>>(new KeyValueRDD<int, std::string>());
+  }
 
   std::istringstream stream(text);
   while (std::getline(stream, line)) {
-    kvs.insert(std::make_pair(stream.tellg(), line));
+    int pos = offset + stream.tellg();
+    static_cast<KeyValueRDD<int, std::string> *>(rdds_[rdd_id].get())
+        ->Insert(pos, line);
   }
 
-  rdds_[rdd_id].push_back(
-      std::unique_ptr<KeyValueRDD<int, std::string>>(new KeyValueRDD<int, std::string>(kvs)));
-
-  std::cout << "received: " << text.length() << std::endl;
+  std::cout << "received: " << text.length() << " bytes" << std::endl;
   return rdd_rpc::Response::OK;
 }
 
@@ -91,11 +92,8 @@ rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
   std::string dl_filename;
   ParseParams(req, rdd_id, dl_filename, new_rdd_id);
 
-  for (auto &rdd : rdds_[rdd_id]) {
-    rdds_[new_rdd_id].push_back(
-        static_cast<KeyValueRDD<int, std::string> *>(rdd.get())->Map<std::string, int>(dl_filename)
-    );
-  }
+  rdds_[new_rdd_id] =
+      static_cast<KeyValueRDD<int, std::string> *>(rdds_[rdd_id].get())->Map<std::string, int>(dl_filename);
 
   return rdd_rpc::Response::OK;
 }
@@ -106,11 +104,11 @@ rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
   int rdd_id, dest_id, n_reducers;
   ParseParams(req, rdd_id, dest_id, n_reducers);
 
-  for (auto &rdd : rdds_[rdd_id]) {
-    // TODO dirty hack :)
-    if (!static_cast<KeyValuesRDD<std::string, int> *>(rdd.get())->ShuffleServer(dest_id, n_reducers, data_port_)) {
-      return rdd_rpc::Response::ERR;
-    }
+  // TODO dirty hack :)
+  if (!static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id].get())->ShuffleServer(dest_id,
+                                                                                         n_reducers,
+                                                                                         data_port_)) {
+    return rdd_rpc::Response::ERR;
   }
 
   return rdd_rpc::Response::OK;
@@ -123,11 +121,9 @@ rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
   int rdd_id, dest_id, n_reducers;
   ParseParams(req, rdd_id, dest, dest_id, n_reducers);
 
-  for (auto &rdd : rdds_[rdd_id]) {
-    // TODO dirty hack :)
-    if (!static_cast<KeyValuesRDD<std::string, int> *>(rdd.get())->ShuffleClient(dest, dest_id, n_reducers)) {
-      return rdd_rpc::Response::ERR;
-    }
+  // TODO dirty hack :)
+  if (!static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id].get())->ShuffleClient(dest, dest_id, n_reducers)) {
+    return rdd_rpc::Response::ERR;
   }
 
   return rdd_rpc::Response::OK;
@@ -140,12 +136,9 @@ rdd_rpc::Response Executor::Reduce(msgpack::rpc::request &req) {
   std::string dl_filename;
   ParseParams(req, rdd_id, dl_filename, new_rdd_id);
 
-  for (auto &rdd : rdds_[rdd_id]) {
-    // TODO dirty hack :)
-    rdds_[new_rdd_id].push_back(
-        static_cast<KeyValuesRDD<std::string, int> *>(rdd.get())->Reduce<std::string, int>(dl_filename)
-    );
-  }
+  // TODO dirty hack :)
+  rdds_[new_rdd_id] =
+      static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id].get())->Reduce<std::string, int>(dl_filename);
 
   return rdd_rpc::Response::OK;
 }
@@ -156,9 +149,7 @@ rdd_rpc::Response Executor::Print(msgpack::rpc::request &req) {
   int rdd_id;
   ParseParams(req, rdd_id);
 
-  for (auto &rdd : rdds_[rdd_id]) {
-    rdd.get()->Print();
-  }
+  rdds_[rdd_id]->Print();
 
   return rdd_rpc::Response::OK;
 }

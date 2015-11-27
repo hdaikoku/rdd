@@ -44,6 +44,7 @@ std::unique_ptr<KeyValueRDDStub> RDDContext::TextFile(const std::string &filenam
       ifs.ignore(default_chunk_size_, '\n');
     }
 
+    int offset = ifs.tellg();
     ifs.read(buf.get(), default_chunk_size_);
     buf[ifs.gcount()] = '\0';
 
@@ -55,7 +56,7 @@ std::unique_ptr<KeyValueRDDStub> RDDContext::TextFile(const std::string &filenam
 
     owner = next_dst_id_++ % n_slaves_;
 
-    fs.push_back(Call("distribute", owner, rdd_id, std::string(buf.get()).append(last_line)));
+    fs.push_back(Call("distribute", owner, rdd_id, std::string(buf.get()).append(last_line), offset));
 
     owners.insert(owner);
   }

@@ -19,7 +19,7 @@ class KeyValueRDD;
 #include "../socket/socket_client.h"
 
 template<typename K, typename V>
-class KeyValuesRDD: public Rdd {
+class KeyValuesRDD: public RDD {
  public:
 
   KeyValuesRDD(const std::unordered_map<K, std::vector<V>> &key_values) : key_values_(key_values) { }
