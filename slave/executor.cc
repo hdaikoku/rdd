@@ -66,9 +66,10 @@ rdd_rpc::Response Executor::Hello(msgpack::rpc::request &req) {
 rdd_rpc::Response Executor::DistributeText(msgpack::rpc::request &req) {
   std::cout << "distribute_text called" << std::endl;
 
-  int rdd_id, offset;
+  int rdd_id;
+  long long int offset;
   std::string filename, line;
-  std::vector<std::pair<int, int>> indices;
+  std::vector<std::pair<long long int, int>> indices;
 
   ParseParams(req, rdd_id, filename, indices);
   int max_size = 0;
