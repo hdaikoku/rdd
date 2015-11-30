@@ -29,8 +29,8 @@ static bool ReadConf(const char *conf_path, vector<pair<string, int>> &slaves) {
 }
 
 int main(int argc, const char **argv) {
-  if (argc != 5) {
-    cerr << "Usage: " << argv[0] << " [conf_path] [text_file] [mapper.so] [reducer.so]" << endl;
+  if (argc != 6) {
+    cerr << "Usage: " << argv[0] << " [conf_path] [text_file] [mapper.so] [combiner.so] [reducer.so]" << endl;
     return 1;
   }
 
@@ -50,11 +50,11 @@ int main(int argc, const char **argv) {
   auto start_mr = chrono::steady_clock::now();
 
   auto start_map = chrono::steady_clock::now();
-  auto mapped = textFile->Map(argv[3]);
+  auto mapped = textFile->Map(argv[3], argv[4]);
   auto end_map = chrono::steady_clock::now();
 
   auto start_reduce = chrono::steady_clock::now();
-  auto reduced = mapped->Reduce(argv[4]);
+  auto reduced = mapped->Reduce(argv[5]);
   auto end_reduce = chrono::steady_clock::now();
 
   auto end_mr = chrono::steady_clock::now();

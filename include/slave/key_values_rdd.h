@@ -19,7 +19,7 @@ class KeyValueRDD;
 #include "../socket/socket_client.h"
 
 template<typename K, typename V>
-class KeyValuesRDD: public Rdd {
+class KeyValuesRDD: public RDD {
  public:
 
   KeyValuesRDD(const std::unordered_map<K, std::vector<V>> &key_values) : key_values_(key_values) { }
@@ -28,6 +28,50 @@ class KeyValuesRDD: public Rdd {
     for (const auto &kv : key_values) {
       std::copy(kv.second.begin(), kv.second.end(), std::back_inserter(key_values_[kv.first]));
     }
+  }
+
+  void MergeTo(KeyValuesRDD<K, V> *other) {
+    for (const auto &kvs : key_values_) {
+      other->Insert(kvs);
+    }
+  }
+
+  void Insert(const std::pair<K, std::vector<V>> &p) {
+    std::copy(p.second.begin(), p.second.end(), std::back_inserter(key_values_[p.first]));
+  }
+
+  bool Combine(const std::string &dl_filename) {
+    void *handle = LoadLib(dl_filename);
+    if (handle == NULL) {
+      std::cerr << "dlopen" << std::endl;
+      return false;
+    }
+
+    const auto create_reducer
+        = reinterpret_cast<CreateReducer<K, V, K, V>>(LoadFunc(handle, "Create"));
+    if (create_reducer == nullptr) {
+      std::cerr << "dlsym" << std::endl;
+      dlclose(handle);
+      return false;
+    }
+
+    auto combiner = create_reducer();
+
+    tbb::concurrent_unordered_map<K, V> kvs;
+
+    tbb::parallel_for_each(key_values_, [&kvs, &combiner](const std::pair<K, std::vector<V>> &kv){
+      kvs.insert(combiner->Reduce(kv.first, kv.second));
+    });
+
+    key_values_.clear();
+    for (const auto &kv : kvs) {
+      key_values_[kv.first].push_back(kv.second);
+    }
+
+    combiner.release();
+    dlclose(handle);
+
+    return true;
   }
 
   template<typename NK, typename NV>
@@ -48,12 +92,11 @@ class KeyValuesRDD: public Rdd {
 
     auto reducer = create_reducer();
 
-    std::unordered_map<NK, NV> kvs;
+    tbb::concurrent_unordered_map<NK, NV> kvs;
 
-    for (auto kv : key_values_) {
-      auto reduced = reducer->Reduce(kv.first, kv.second);
-      kvs.insert(reduced);
-    }
+    tbb::parallel_for_each(key_values_, [&kvs, &reducer](const std::pair<K, std::vector<V>> &kv){
+      kvs.insert(reducer->Reduce(kv.first, kv.second));
+    });
 
     reducer.release();
     dlclose(handle);

@@ -7,6 +7,7 @@
 
 #include <jubatus/msgpack/rpc/server.h>
 #include <rdd_rpc.h>
+#include <tbb/tbb.h>
 #include "rdd.h"
 
 class Executor: public msgpack::rpc::dispatcher {
@@ -25,11 +26,12 @@ class Executor: public msgpack::rpc::dispatcher {
   int job_port_;
   int data_port_;
   int id_;
-  std::unordered_map<int, std::vector<std::unique_ptr<Rdd>>> rdds_;
+  std::unordered_map<int, tbb::concurrent_vector<std::unique_ptr<RDD>>> rdds_;
 
   rdd_rpc::Response Hello(msgpack::rpc::request &req);
   rdd_rpc::Response DistributeText(msgpack::rpc::request &req);
   rdd_rpc::Response Map(msgpack::rpc::request &req);
+  rdd_rpc::Response Combine(msgpack::rpc::request &req);
   rdd_rpc::Response ShuffleSrv(msgpack::rpc::request &req);
   rdd_rpc::Response ShuffleCli(msgpack::rpc::request &req);
   rdd_rpc::Response Reduce(msgpack::rpc::request &req);

@@ -24,6 +24,10 @@ void RDDContext::Init() {
   }
 }
 
+void RDDContext::SetTimeout(int dest, unsigned int timeout) {
+  sp_.get_session(slaves_[dest].first, slaves_[dest].second).set_timeout(timeout);
+}
+
 // Returns new RDD id
 int RDDContext::GetNewRddId() {
   return last_rdd_id_++;
@@ -33,31 +37,40 @@ std::unique_ptr<KeyValueRDDStub> RDDContext::TextFile(const std::string &filenam
   std::ifstream ifs(filename);
 
   std::vector<msgpack::rpc::future> fs;
-  std::unique_ptr<char[]> buf(new char[default_chunk_size_ + 1]);
+  std::unordered_map<int, std::vector<std::pair<long long int, int>>> index;
   std::set<int> owners;
   int owner;
   int rdd_id = GetNewRddId();
 
+  long long int filesize = ifs.seekg(0, ifs.end).tellg();
+  ifs.seekg(0, ifs.beg);
+
   while (!ifs.eof()) {
-    if (ifs.tellg() > 0) {
-      ifs.seekg(-1, ifs.cur);
-      ifs.ignore(default_chunk_size_, '\n');
-    }
-
-    ifs.read(buf.get(), default_chunk_size_);
-    buf[ifs.gcount()] = '\0';
-
-    std::string last_line;
-    if (!ifs.eof()) {
-      std::getline(ifs, last_line);
-      last_line.append("\n");
-    }
-
     owner = next_dst_id_++ % n_slaves_;
 
-    fs.push_back(Call("distribute", owner, rdd_id, std::string(buf.get()).append(last_line)));
+    long long int offset = ifs.tellg();
 
-    owners.insert(owner);
+    if ((filesize - offset) < default_chunk_size_) {
+      if (filesize > offset) {
+        index[owner].push_back(std::make_pair(offset, (filesize - offset)));
+      }
+      break;
+    }
+
+    ifs.seekg(default_chunk_size_, ifs.cur);
+
+    if (!ifs.eof()) {
+      ifs.ignore(default_chunk_size_, '\n');
+    }
+    long long int end = ifs.tellg();
+
+    index[owner].push_back(std::make_pair(offset, (end - offset)));
+  }
+
+  ifs.close();
+
+  for (const auto &i : index) {
+    fs.push_back(Call("distribute", i.first, rdd_id, filename, i.second));
   }
 
   int i = 0;
@@ -66,6 +79,7 @@ std::unique_ptr<KeyValueRDDStub> RDDContext::TextFile(const std::string &filenam
       std::cerr << "could not distribute to "
           << slaves_[i].first << ":" << slaves_[i].second << std::endl;
     }
+    owners.insert(i);
     i++;
   }
 

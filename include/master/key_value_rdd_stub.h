@@ -16,6 +16,8 @@ class KeyValueRDDStub: public RDDStub {
 
   std::unique_ptr<KeyValuesRDDStub> Map(const std::string &dl_filename);
 
+  std::unique_ptr<KeyValuesRDDStub> Map(const std::string &dl_mapper, const std::string &dl_combiner);
+
   void Print();
 };
 
