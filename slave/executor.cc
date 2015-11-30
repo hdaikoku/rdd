@@ -95,6 +95,7 @@ rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
   std::vector<std::thread> threads;
   for (const auto &rdd : rdds_[rdd_id]) {
     threads.push_back(std::thread([&new_rdds, &dl_filename](RDD *rdd) {
+      // TODO dirty hack :)
       new_rdds.push_back(static_cast<KeyValueRDD<long long int, std::string> *>(rdd)
                              ->Map<std::string, int>(dl_filename));
     }, rdd.get()));
@@ -102,10 +103,6 @@ rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
   for (auto &thread : threads) {
     thread.join();
   }
-  //tbb::parallel_for_each(rdds_[rdd_id], [&new_rdds, &dl_filename](const std::unique_ptr<RDD> &rdd){
-  //  new_rdds.push_back(static_cast<KeyValueRDD<long long int, std::string> *>(rdd.get())
-  //                         ->Map<std::string, int>(dl_filename));
-  //});
 
   for (auto &rdd : new_rdds) {
     rdds_[new_rdd_id].push_back(std::move(rdd));
@@ -121,12 +118,10 @@ rdd_rpc::Response Executor::Combine(msgpack::rpc::request &req) {
   std::string dl_filename;
   ParseParams(req, rdd_id, dl_filename);
 
-  // TODO dirty hack :)
-
-  tbb::concurrent_vector<std::unique_ptr<RDD>> new_rdds;
   std::vector<std::thread> threads;
   for (const auto &rdd : rdds_[rdd_id]) {
-    threads.push_back(std::thread([&new_rdds, &dl_filename](RDD *rdd) {
+    threads.push_back(std::thread([&dl_filename](RDD *rdd) {
+      // TODO dirty hack :)
       static_cast<KeyValuesRDD<std::string, int> *>(rdd)
           ->Combine(dl_filename);
     }, rdd.get()));
@@ -148,6 +143,7 @@ rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
     int i = 0;
     for (const auto &rdd : rdds_[rdd_id]) {
       if (i++ == 0) continue;
+      // TODO dirty hack :)
       static_cast<KeyValuesRDD<std::string, int> *>(rdd.get())->MergeTo(
           static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id][0].get()));
     }
@@ -177,6 +173,7 @@ rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
     int i = 0;
     for (const auto &rdd : rdds_[rdd_id]) {
       if (i++ == 0) continue;
+      // TODO dirty hack :)
       static_cast<KeyValuesRDD<std::string, int> *>(rdd.get())->MergeTo(
           static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id][0].get()));
     }
