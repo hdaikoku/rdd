@@ -4,6 +4,7 @@
 
 #include <sstream>
 #include <fstream>
+#include <thread>
 #include "slave/executor.h"
 #include "slave/key_value_rdd.h"
 #include "slave/key_values_rdd.h"
@@ -74,8 +75,11 @@ rdd_rpc::Response Executor::DistributeText(msgpack::rpc::request &req) {
 
   ParseParams(req, rdd_id, filename, indices);
 
-  rdds_[rdd_id] = std::unique_ptr<KeyValueRDD<long long int, std::string>>
-      (new KeyValueRDD<long long int, std::string>(filename, indices));
+  for (const auto &index : indices) {
+    rdds_[rdd_id].push_back(
+        std::unique_ptr<KeyValueRDD<long long int, std::string>>
+            (new KeyValueRDD<long long int, std::string>(filename, index.first, index.second)));
+  }
 
   return rdd_rpc::Response::OK;
 }
@@ -87,8 +91,25 @@ rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
   std::string dl_filename;
   ParseParams(req, rdd_id, dl_filename, new_rdd_id);
 
-  rdds_[new_rdd_id] = static_cast<KeyValueRDD<long long int, std::string> *>(rdds_[rdd_id].get())
-      ->Map<std::string, int>(dl_filename);
+  tbb::concurrent_vector<std::unique_ptr<RDD>> new_rdds;
+  std::vector<std::thread> threads;
+  for (const auto &rdd : rdds_[rdd_id]) {
+    threads.push_back(std::thread([&new_rdds, &dl_filename](RDD *rdd) {
+      new_rdds.push_back(static_cast<KeyValueRDD<long long int, std::string> *>(rdd)
+                             ->Map<std::string, int>(dl_filename));
+    }, rdd.get()));
+  }
+  for (auto &thread : threads) {
+    thread.join();
+  }
+  //tbb::parallel_for_each(rdds_[rdd_id], [&new_rdds, &dl_filename](const std::unique_ptr<RDD> &rdd){
+  //  new_rdds.push_back(static_cast<KeyValueRDD<long long int, std::string> *>(rdd.get())
+  //                         ->Map<std::string, int>(dl_filename));
+  //});
+
+  for (auto &rdd : new_rdds) {
+    rdds_[new_rdd_id].push_back(std::move(rdd));
+  }
 
   return rdd_rpc::Response::OK;
 }
@@ -101,8 +122,17 @@ rdd_rpc::Response Executor::Combine(msgpack::rpc::request &req) {
   ParseParams(req, rdd_id, dl_filename);
 
   // TODO dirty hack :)
-  if (!static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id].get())->Combine(dl_filename)) {
-    return rdd_rpc::Response::ERR;
+
+  tbb::concurrent_vector<std::unique_ptr<RDD>> new_rdds;
+  std::vector<std::thread> threads;
+  for (const auto &rdd : rdds_[rdd_id]) {
+    threads.push_back(std::thread([&new_rdds, &dl_filename](RDD *rdd) {
+      static_cast<KeyValuesRDD<std::string, int> *>(rdd)
+          ->Combine(dl_filename);
+    }, rdd.get()));
+  }
+  for (auto &thread : threads) {
+    thread.join();
   }
 
   return rdd_rpc::Response::OK;
@@ -114,8 +144,21 @@ rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
   int rdd_id, dest_id, n_reducers;
   ParseParams(req, rdd_id, dest_id, n_reducers);
 
+  if (rdds_[rdd_id].size() > 1) {
+    int i = 0;
+    for (const auto &rdd : rdds_[rdd_id]) {
+      if (i++ == 0) continue;
+      static_cast<KeyValuesRDD<std::string, int> *>(rdd.get())->MergeTo(
+          static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id][0].get()));
+    }
+  }
+
+  auto rdd = std::move(rdds_[rdd_id][0]);
+  rdds_[rdd_id].clear();
+  rdds_[rdd_id].push_back(std::move(rdd));
+
   // TODO dirty hack :)
-  if (!static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id].get())
+  if (!static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id][0].get())
       ->ShuffleServer(dest_id, n_reducers, data_port_)) {
     return rdd_rpc::Response::ERR;
   }
@@ -130,8 +173,21 @@ rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
   int rdd_id, dest_id, n_reducers;
   ParseParams(req, rdd_id, dest, dest_id, n_reducers);
 
+  if (rdds_[rdd_id].size() > 1) {
+    int i = 0;
+    for (const auto &rdd : rdds_[rdd_id]) {
+      if (i++ == 0) continue;
+      static_cast<KeyValuesRDD<std::string, int> *>(rdd.get())->MergeTo(
+          static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id][0].get()));
+    }
+  }
+
+  auto rdd = std::move(rdds_[rdd_id][0]);
+  rdds_[rdd_id].clear();
+  rdds_[rdd_id].push_back(std::move(rdd));
+
   // TODO dirty hack :)
-  if (!static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id].get())
+  if (!static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id][0].get())
       ->ShuffleClient(dest, dest_id, n_reducers)) {
     return rdd_rpc::Response::ERR;
   }
@@ -147,8 +203,8 @@ rdd_rpc::Response Executor::Reduce(msgpack::rpc::request &req) {
   ParseParams(req, rdd_id, dl_filename, new_rdd_id);
 
   // TODO dirty hack :)
-  rdds_[new_rdd_id] = static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id].get())
-      ->Reduce<std::string, int>(dl_filename);
+  rdds_[new_rdd_id].push_back(static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id][0].get())
+                                  ->Reduce<std::string, int>(dl_filename));
 
   return rdd_rpc::Response::OK;
 }
@@ -159,7 +215,7 @@ rdd_rpc::Response Executor::Print(msgpack::rpc::request &req) {
   int rdd_id;
   ParseParams(req, rdd_id);
 
-  rdds_[rdd_id]->Print();
+  rdds_[rdd_id][0]->Print();
 
   return rdd_rpc::Response::OK;
 }

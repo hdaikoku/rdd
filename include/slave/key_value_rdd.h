@@ -29,34 +29,36 @@ class KeyValueRDD: public RDD {
     }
   }
 
-  KeyValueRDD(const std::string &filename, const std::vector<std::pair<long long int, int>> &indices)
-      : filename_(filename), indices_(indices) {};
+  KeyValueRDD(const std::string &filename, const long long int offset, const int size)
+      : filename_(filename), chunk_offset_(offset), chunk_size_(size) {};
 
   void Insert(const K &key, const V &value) {
     key_values_.insert(std::make_pair(key, value));
   }
 
-  static void ReadChunk(std::unordered_map<long long int, std::string> &kvs,
-                 const std::string &filename, long long int offset, int size) {
-    std::ifstream ifs(filename);
-    std::unique_ptr<char []> buf(new char[size + 1]);
+  void Materialize() {
+    std::ifstream ifs(filename_);
+    std::unique_ptr<char []> buf(new char[chunk_size_ + 1]);
 
-    ifs.seekg(offset);
-    ifs.read(buf.get(), size);
-    std::cout << "read: " << size << " bytes" << std::endl;
-    buf[size] = '\0';
+    ifs.seekg(chunk_offset_);
+    ifs.read(buf.get(), chunk_size_);
+    buf[chunk_size_] = '\0';
     ifs.close();
 
     size_t cur = 0, pos = 0;
     std::string text(buf.get());
     while ((pos = text.find_first_of("\n", cur)) != std::string::npos) {
-      kvs.insert(std::make_pair(offset + cur, std::string(text, cur, pos - cur)));
+      key_values_.insert(std::make_pair(chunk_offset_ + cur, std::string(text, cur, pos - cur)));
       cur = pos + 1;
     }
   }
 
   template<typename NK, typename NV>
   std::unique_ptr<KeyValuesRDD<NK, NV>> Map(const std::string &dl_filename) {
+    if (key_values_.size() == 0) {
+      Materialize();
+    }
+
     void *handle = LoadLib(dl_filename);
     if (handle == NULL) {
       std::cerr << "dlopen" << std::endl;
@@ -73,22 +75,10 @@ class KeyValueRDD: public RDD {
 
     auto mapper = create_mapper();
 
-    std::string filename(filename_);
-
-    tbb::concurrent_unordered_map<NK, tbb::concurrent_vector<NV>> kvs;
-    tbb::parallel_for_each(indices_, [&kvs, &mapper, &filename](const std::pair<long long int, int> &index){
-      std::unordered_map<K, V> tkvs;
-      ReadChunk(tkvs, filename, index.first, index.second);
-      std::cout << "tvks size: " << tkvs.size() << std::endl;
-      std::unordered_map<NK, std::vector<NV>> key_values;
-      for (const auto &kv : tkvs) {
-        mapper->Map(key_values, kv.first, kv.second);
-      }
-
-      for (const auto &kv : key_values) {
-        std::copy(kv.second.begin(), kv.second.end(), std::back_inserter(kvs[kv.first]));
-      }
-    });
+    std::unordered_map<NK, std::vector<NV>> kvs;
+    for (const auto &kv : key_values_) {
+      mapper->Map(kvs, kv.first, kv.second);
+    }
 
     mapper.release();
     dlclose(handle);
@@ -104,8 +94,9 @@ class KeyValueRDD: public RDD {
 
  private:
   std::unordered_map<K, V> key_values_;
-  std::vector<std::pair<long long int, int>> indices_;
   std::string filename_;
+  long long int chunk_offset_;
+  int chunk_size_;
 
 };
 

@@ -30,6 +30,16 @@ class KeyValuesRDD: public RDD {
     }
   }
 
+  void MergeTo(KeyValuesRDD<K, V> *other) {
+    for (const auto &kvs : key_values_) {
+      other->Insert(kvs);
+    }
+  }
+
+  void Insert(const std::pair<K, std::vector<V>> &p) {
+    std::copy(p.second.begin(), p.second.end(), std::back_inserter(key_values_[p.first]));
+  }
+
   bool Combine(const std::string &dl_filename) {
     void *handle = LoadLib(dl_filename);
     if (handle == NULL) {
