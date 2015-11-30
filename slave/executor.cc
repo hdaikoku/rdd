@@ -4,7 +4,6 @@
 
 #include <sstream>
 #include <fstream>
-#include <thread>
 #include "slave/executor.h"
 #include "slave/key_value_rdd.h"
 #include "slave/key_values_rdd.h"
@@ -21,7 +20,7 @@ void Executor::dispatch(msgpack::rpc::request req) {
     } else if (method == "distribute") {
       // create KeyValueRDD from received text
       req.result(DistributeText(req));
-      
+
     } else if (method == "map") {
       // Map specified RDD
       req.result(Map(req));
@@ -91,22 +90,18 @@ rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
   std::string dl_filename;
   ParseParams(req, rdd_id, dl_filename, new_rdd_id);
 
-  tbb::concurrent_vector<std::unique_ptr<RDD>> new_rdds;
-  std::vector<std::thread> threads;
-  for (const auto &rdd : rdds_[rdd_id]) {
-    threads.push_back(std::thread([&new_rdds, &dl_filename](RDD *rdd) {
-      // TODO dirty hack :)
-      new_rdds.push_back(static_cast<KeyValueRDD<long long int, std::string> *>(rdd)
-                             ->Map<std::string, int>(dl_filename));
-    }, rdd.get()));
-  }
-  for (auto &thread : threads) {
-    thread.join();
-  }
-
-  for (auto &rdd : new_rdds) {
-    rdds_[new_rdd_id].push_back(std::move(rdd));
-  }
+  auto &rdds = rdds_[rdd_id];
+  auto &new_rdds = rdds_[new_rdd_id];
+  tbb::parallel_for(
+      tbb::blocked_range<int>(0, rdds.size(), 1),
+      [&rdds, &new_rdds, &dl_filename](tbb::blocked_range<int> &range) {
+        for (int i = range.begin(); i < range.end(); i++) {
+          // TODO dirty hack :)
+          new_rdds.push_back(static_cast<KeyValueRDD<long long int, std::string> *>(rdds[i].get())
+                                 ->Map<std::string, int>(dl_filename));
+        }
+      }
+  );
 
   return rdd_rpc::Response::OK;
 }
@@ -118,17 +113,17 @@ rdd_rpc::Response Executor::Combine(msgpack::rpc::request &req) {
   std::string dl_filename;
   ParseParams(req, rdd_id, dl_filename);
 
-  std::vector<std::thread> threads;
-  for (const auto &rdd : rdds_[rdd_id]) {
-    threads.push_back(std::thread([&dl_filename](RDD *rdd) {
-      // TODO dirty hack :)
-      static_cast<KeyValuesRDD<std::string, int> *>(rdd)
-          ->Combine(dl_filename);
-    }, rdd.get()));
-  }
-  for (auto &thread : threads) {
-    thread.join();
-  }
+  auto &rdds = rdds_[rdd_id];
+  tbb::parallel_for(
+      tbb::blocked_range<int>(0, rdds.size(), 1),
+      [&rdds, &dl_filename](tbb::blocked_range<int> &range) {
+        for (int i = range.begin(); i < range.end(); i++) {
+          // TODO dirty hack :)
+          static_cast<KeyValuesRDD<std::string, int> *>(rdds[i].get())
+              ->Combine(dl_filename);
+        }
+      }
+  );
 
   return rdd_rpc::Response::OK;
 }
