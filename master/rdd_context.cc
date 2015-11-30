@@ -24,6 +24,10 @@ void RDDContext::Init() {
   }
 }
 
+void RDDContext::SetTimeout(int dest, unsigned int timeout) {
+  sp_.get_session(slaves_[dest].first, slaves_[dest].second).set_timeout(timeout);
+}
+
 // Returns new RDD id
 int RDDContext::GetNewRddId() {
   return last_rdd_id_++;

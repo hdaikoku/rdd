@@ -11,6 +11,7 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_fil
   int new_rdd_id = rc_->GetNewRddId();
 
   for (auto o : owners_) {
+    rc_->SetTimeout(o, 60);
     fs.push_back(rc_->Call("map", o, rdd_id_, dl_filename, new_rdd_id));
   }
 

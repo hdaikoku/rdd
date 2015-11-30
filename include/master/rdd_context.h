@@ -26,6 +26,8 @@ class RDDContext {
 
   void Init();
 
+  void SetTimeout(int dest, unsigned int timeout);
+
   // Calls the endpoint specified by dest, with one argument
   template<typename A1>
   msgpack::rpc::future Call(const std::string &func, const int &dest, const A1 &a1) {
