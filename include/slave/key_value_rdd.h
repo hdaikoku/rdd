@@ -29,8 +29,30 @@ class KeyValueRDD: public RDD {
     }
   }
 
+  KeyValueRDD(const std::string &filename, const std::vector<std::pair<long long int, int>> &indices)
+      : filename_(filename), indices_(indices) {};
+
   void Insert(const K &key, const V &value) {
     key_values_.insert(std::make_pair(key, value));
+  }
+
+  static void ReadChunk(std::unordered_map<long long int, std::string> &kvs,
+                 const std::string &filename, long long int offset, int size) {
+    std::ifstream ifs(filename);
+    std::unique_ptr<char []> buf(new char[size + 1]);
+
+    ifs.seekg(offset);
+    ifs.read(buf.get(), size);
+    std::cout << "read: " << size << " bytes" << std::endl;
+    buf[size] = '\0';
+    ifs.close();
+
+    size_t cur = 0, pos = 0;
+    std::string text(buf.get());
+    while ((pos = text.find_first_of("\n", cur)) != std::string::npos) {
+      kvs.insert(std::make_pair(offset + cur, std::string(text, cur, pos - cur)));
+      cur = pos + 1;
+    }
   }
 
   template<typename NK, typename NV>
@@ -51,9 +73,21 @@ class KeyValueRDD: public RDD {
 
     auto mapper = create_mapper();
 
+    std::string filename(filename_);
+
     tbb::concurrent_unordered_map<NK, tbb::concurrent_vector<NV>> kvs;
-    tbb::parallel_for_each(key_values_, [&kvs, &mapper](const std::pair<K, V> &kv) {
-      mapper->Map(kvs, kv.first, kv.second);
+    tbb::parallel_for_each(indices_, [&kvs, &mapper, &filename](const std::pair<long long int, int> &index){
+      std::unordered_map<K, V> tkvs;
+      ReadChunk(tkvs, filename, index.first, index.second);
+      std::cout << "tvks size: " << tkvs.size() << std::endl;
+      std::unordered_map<NK, std::vector<NV>> key_values;
+      for (const auto &kv : tkvs) {
+        mapper->Map(key_values, kv.first, kv.second);
+      }
+
+      for (const auto &kv : key_values) {
+        std::copy(kv.second.begin(), kv.second.end(), std::back_inserter(kvs[kv.first]));
+      }
     });
 
     mapper.release();
@@ -70,6 +104,8 @@ class KeyValueRDD: public RDD {
 
  private:
   std::unordered_map<K, V> key_values_;
+  std::vector<std::pair<long long int, int>> indices_;
+  std::string filename_;
 
 };
 

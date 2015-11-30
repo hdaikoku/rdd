@@ -8,6 +8,8 @@
 #include <memory>
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_vector.h>
+#include <unordered_map>
+#include <vector>
 
 template <typename NK, typename NV, typename K, typename V>
 class Mapper {
@@ -15,7 +17,7 @@ class Mapper {
   Mapper() { }
   virtual ~Mapper() { }
 
-  virtual void Map(tbb::concurrent_unordered_map<NK, tbb::concurrent_vector<NV>> &kvs,
+  virtual void Map(std::unordered_map<NK, std::vector<NV>> &kvs,
                    const K &key, const V &value) = 0;
 };
 

@@ -69,35 +69,13 @@ rdd_rpc::Response Executor::DistributeText(msgpack::rpc::request &req) {
   std::cout << "distribute_text called" << std::endl;
 
   int rdd_id;
-  long long int offset;
-  std::string filename, line;
+  std::string filename;
   std::vector<std::pair<long long int, int>> indices;
 
   ParseParams(req, rdd_id, filename, indices);
-  int max_size = 0;
-  for (const auto &i : indices) {
-    if (i.second > max_size) {
-      max_size = i.second;
-    }
-  }
 
-  std::ifstream ifs(filename);
-  rdds_[rdd_id] = std::unique_ptr<KeyValueRDD<int, std::string>>(new KeyValueRDD<int, std::string>());
-  std::unique_ptr<char[]> buf(new char[max_size + 1]);
-
-  for (const auto &i : indices) {
-    ifs.seekg(i.first);
-    ifs.read(buf.get(), i.second);
-    buf[i.second] = '\0';
-    std::cout << "read: " << i.second << " bytes" << std::endl;
-
-    std::istringstream iss(buf.get());
-    while (std::getline(iss, line)) {
-      offset = i.first + iss.tellg();
-      static_cast<KeyValueRDD<int, std::string> *>(rdds_[rdd_id].get())
-          ->Insert(offset, line);
-    }
-  }
+  rdds_[rdd_id] = std::unique_ptr<KeyValueRDD<long long int, std::string>>
+      (new KeyValueRDD<long long int, std::string>(filename, indices));
 
   return rdd_rpc::Response::OK;
 }
@@ -109,8 +87,8 @@ rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
   std::string dl_filename;
   ParseParams(req, rdd_id, dl_filename, new_rdd_id);
 
-  rdds_[new_rdd_id] =
-      static_cast<KeyValueRDD<int, std::string> *>(rdds_[rdd_id].get())->Map<std::string, int>(dl_filename);
+  rdds_[new_rdd_id] = static_cast<KeyValueRDD<long long int, std::string> *>(rdds_[rdd_id].get())
+      ->Map<std::string, int>(dl_filename);
 
   return rdd_rpc::Response::OK;
 }

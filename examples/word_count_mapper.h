@@ -7,13 +7,12 @@
 
 #include <mapper.h>
 #include <string>
+#include <unordered_map>
 
 class WordCountMapper: public Mapper<std::string, int, int, std::string> {
  public:
 
-  virtual void
-      Map(tbb::concurrent_unordered_map<std::string, tbb::concurrent_vector<int>> &kvs,
-          const int &key, const std::string &value) override;
+  virtual void Map(std::unordered_map<std::string, std::vector<int>> &kvs, const int &key, const std::string &value);
 };
 
 extern "C" std::unique_ptr<Mapper<std::string, int, int, std::string>> Create() {

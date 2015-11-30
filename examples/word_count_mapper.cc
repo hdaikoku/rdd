@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include "word_count_mapper.h"
 
-void WordCountMapper::Map(tbb::concurrent_unordered_map<std::string, tbb::concurrent_vector<int>> &kvs,
+void WordCountMapper::Map(std::unordered_map<std::string, std::vector<int>> &kvs,
                           const int &key,
                           const std::string &value) {
   size_t cur = 0, pos = 0;
@@ -15,4 +15,3 @@ void WordCountMapper::Map(tbb::concurrent_unordered_map<std::string, tbb::concur
     cur = pos + 1;
   }
 }
-
