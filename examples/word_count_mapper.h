@@ -9,14 +9,15 @@
 #include <string>
 #include <unordered_map>
 
-class WordCountMapper: public Mapper<std::string, int, int, std::string> {
+class WordCountMapper: public Mapper<std::string, int, long long int, std::string> {
  public:
 
-  virtual void Map(std::unordered_map<std::string, std::vector<int>> &kvs, const int &key, const std::string &value);
+  virtual void
+      Map(std::unordered_map<std::string, std::vector<int>> &kvs, const long long int &key, const std::string &value);
 };
 
-extern "C" std::unique_ptr<Mapper<std::string, int, int, std::string>> Create() {
-  return std::unique_ptr<Mapper<std::string, int, int, std::string>>(new WordCountMapper);
+extern "C" std::unique_ptr<Mapper<std::string, int, long long int, std::string>> Create() {
+  return std::unique_ptr<Mapper<std::string, int, long long int, std::string>>(new WordCountMapper);
 }
 
 
