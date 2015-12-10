@@ -17,5 +17,4 @@ extern "C" std::unique_ptr<Reducer<std::string, int, std::string, int>> Create()
   return std::unique_ptr<Reducer<std::string, int, std::string, int>>(new WordCountCombiner);
 }
 
-
 #endif //PROJECT_WORD_COUNT_COMBINER_H
