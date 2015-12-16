@@ -5,28 +5,9 @@
 #include <chrono>
 #include <iostream>
 #include <jubatus/msgpack/rpc/session_pool.h>
-#include <fstream>
-#include <sstream>
 #include "master/rdd_context.h"
 
 using namespace std;
-
-static bool ReadConf(const char *conf_path, vector<pair<string, int>> &slaves) {
-  ifstream ifs(conf_path, ios::in);
-  if (ifs.fail()) {
-    return false;
-  }
-
-  string line, addr, port;
-  while (getline(ifs, line)) {
-    istringstream splitter(line);
-    getline(splitter, addr, ' ');
-    getline(splitter, port, ' ');
-    slaves.push_back(make_pair(addr, stoi(port)));
-  }
-
-  return true;
-}
 
 int main(int argc, const char **argv) {
   if (argc != 6) {
@@ -34,19 +15,11 @@ int main(int argc, const char **argv) {
     return 1;
   }
 
-  vector<pair<string, int>> slaves;
-  if (!ReadConf(argv[1], slaves)) {
-    cerr << "could not read the conf file: " << argv[1] << endl;
-    return 1;
-  }
+  auto rc = RDDContext::NewContext(argv[1]);
 
-  RDDContext rc("localhost", slaves);
-  rc.Init();
+  auto textFile = rc->TextFile(argv[2]);
 
-  auto start_text_file = chrono::steady_clock::now();
-  auto textFile = rc.TextFile(argv[2]);
-  auto end_text_file = chrono::steady_clock::now();
-
+  // begin: MapReduce
   auto start_mr = chrono::steady_clock::now();
 
   auto start_map = chrono::steady_clock::now();
@@ -57,15 +30,12 @@ int main(int argc, const char **argv) {
   auto reduced = mapped->Reduce(argv[5]);
   auto end_reduce = chrono::steady_clock::now();
 
+  // end: MapReduce
   auto end_mr = chrono::steady_clock::now();
 
   reduced->Print();
 
   cout << endl;
-
-  cout << "TextFile: "
-      << chrono::duration_cast<chrono::milliseconds>(end_text_file - start_text_file).count() / 1000.
-      << " s" << endl;
 
   cout << "Map: "
       << chrono::duration_cast<chrono::milliseconds>(end_map - start_map).count() / 1000.

@@ -5,26 +5,35 @@
 #ifndef MASTERRDD_RDD_CONTEXT_H
 #define MASTERRDD_RDD_CONTEXT_H
 
+#include <fstream>
 #include <string>
 #include <jubatus/msgpack/rpc/session_pool.h>
 #include "key_value_rdd_stub.h"
 
 class RDDContext {
  public:
-  RDDContext(const std::string &master_addr, const std::vector<std::pair<std::string, int>> &slaves)
-      : master_addr_(master_addr), slaves_(slaves) {
-    // default size of chunks: 128 MB
-    default_chunk_size_ = (1 << 27);
-    last_rdd_id_ = 0;
-    next_dst_id_ = 0;
-    n_slaves_ = slaves_.size();
+  RDDContext(const std::vector<std::pair<std::string, int>> &slaves) : slaves_(slaves) {
+    Init();
   }
 
   virtual ~RDDContext() {
     sp_.end();
   }
 
-  void Init();
+  static std::unique_ptr<RDDContext> NewContext(const std::string &conf_path) {
+    std::ifstream ifs(conf_path);
+    if (ifs.fail()) {
+      return nullptr;
+    }
+
+    std::vector<std::pair<std::string, int>> slaves;
+    std::string addr, port;
+    while (ifs >> addr >> port) {
+      slaves.push_back(std::make_pair(addr, std::stoi(port)));
+    }
+
+    return std::unique_ptr<RDDContext>(new RDDContext(slaves));
+  }
 
   void SetTimeout(int dest, unsigned int timeout);
 
@@ -65,14 +74,15 @@ class RDDContext {
   std::unique_ptr<KeyValueRDDStub> TextFile(const std::string &filename);
 
  private:
-  std::string master_addr_;
   std::vector<std::pair<std::string, int>> slaves_;
-  int n_slaves_;
-  int next_dst_id_;
   msgpack::rpc::session_pool sp_;
-
+  size_t n_slaves_;
+  int next_dst_id_;
   int default_chunk_size_;
   int last_rdd_id_;
+
+  void Init();
+
 };
 
 

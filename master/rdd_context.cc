@@ -8,6 +8,12 @@
 #include "rdd_rpc.h"
 
 void RDDContext::Init() {
+  // default size of chunks: 128 MB
+  default_chunk_size_ = (1 << 27);
+  last_rdd_id_ = 0;
+  next_dst_id_ = 0;
+  n_slaves_ = slaves_.size();
+
   sp_.set_pool_size_limit(n_slaves_);
 
   std::vector<msgpack::rpc::future> fs;
