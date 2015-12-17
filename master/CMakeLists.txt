@@ -11,4 +11,4 @@ set(MASTER_SOURCE_FILES
 
 add_library(RDDMaster STATIC ${MASTER_SOURCE_FILES})
 
-target_link_libraries(RDDMaster msgpack jubatus_mpio jubatus_msgpack-rpc)
+target_link_libraries(RDDMaster ${MSGPACK_LIBRARY} jubatus_mpio jubatus_msgpack-rpc)
