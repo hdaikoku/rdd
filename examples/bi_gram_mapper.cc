@@ -16,11 +16,11 @@ void BiGramMapper::Map(std::unordered_map<std::pair<std::string, std::string>,
     return;
   }
 
-  word1 = std::string(value, cur, pos - cur);
+  word1 = value.substr(cur, pos - cur);
   cur = pos + 1;
 
   while ((pos = value.find_first_of(" ", cur)) != std::string::npos) {
-    word2 = std::string(value, cur, pos - cur);
+    word2 = value.substr(cur, pos - cur);
     kvs[std::make_pair(word1, word2)].push_back(1);
     cur = pos + 1;
     word1 = word2;
