@@ -6,11 +6,9 @@
 #define SLAVERDD_MAPPER_H
 
 #include <memory>
-#include <tbb/concurrent_unordered_map.h>
-#include <tbb/concurrent_vector.h>
+#include <tbb/tbb.h>
 #include <unordered_map>
 #include <vector>
-#include "hasher.h"
 
 template <typename NK, typename NV, typename K, typename V>
 class Mapper {
@@ -18,7 +16,7 @@ class Mapper {
   Mapper() { }
   virtual ~Mapper() { }
 
-  virtual void Map(std::unordered_map<NK, std::vector<NV>, Hasher<NK>> &kvs,
+  virtual void Map(std::unordered_map<NK, std::vector<NV>, tbb::tbb_hash<NK>> &kvs,
                    const K &key, const V &value) = 0;
 
 };

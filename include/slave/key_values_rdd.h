@@ -14,15 +14,15 @@ class KeyValueRDD;
 #include <msgpack.hpp>
 #include <reducer.h>
 #include <dlfcn.h>
+#include <socket/socket_server.h>
+#include <socket/socket_client.h>
 #include "rdd.h"
-#include "../socket/socket_server.h"
-#include "../socket/socket_client.h"
 
 template<typename K, typename V>
 class KeyValuesRDD: public RDD {
  public:
 
-  KeyValuesRDD(const std::unordered_map<K, std::vector<V>, Hasher<K>> &key_values) : key_values_(key_values) { }
+  KeyValuesRDD(const std::unordered_map<K, std::vector<V>, tbb::tbb_hash<K>> &key_values) : key_values_(key_values) { }
 
   KeyValuesRDD(const tbb::concurrent_unordered_map<K, tbb::concurrent_vector<V>> &key_values) {
     for (const auto &kv : key_values) {
@@ -92,7 +92,7 @@ class KeyValuesRDD: public RDD {
 
     auto reducer = create_reducer();
 
-    tbb::concurrent_unordered_map<NK, NV, Hasher<NK>> kvs;
+    tbb::concurrent_unordered_map<NK, NV, tbb::tbb_hash<NK>> kvs;
 
     tbb::parallel_for_each(key_values_, [&kvs, &reducer](const std::pair<K, std::vector<V>> &kv){
       kvs.insert(reducer->Reduce(kv.first, kv.second));
@@ -184,10 +184,10 @@ class KeyValuesRDD: public RDD {
   }
 
  private:
-  std::unordered_map<K, std::vector<V>, Hasher<K>> key_values_;
+  std::unordered_map<K, std::vector<V>, tbb::tbb_hash<K>> key_values_;
 
   void PackKeyValuesFor(int dest, int n_reducers, msgpack::sbuffer &sbuf) {
-    Hasher<K> hasher;
+    auto hasher = key_values_.hash_function();
 
     auto iter = key_values_.begin();
     while (iter != key_values_.end()) {

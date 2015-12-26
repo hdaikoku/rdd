@@ -12,7 +12,7 @@
 class WordCountMapper: public Mapper<std::string, int, long long int, std::string> {
  public:
 
-  virtual void Map(std::unordered_map<std::string, std::vector<int>, Hasher<std::string>> &kvs,
+  virtual void Map(std::unordered_map<std::string, std::vector<int>, tbb::tbb_hash<std::string>> &kvs,
                    const long long int &key, const std::string &value) override;
 
 };

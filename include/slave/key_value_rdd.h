@@ -21,9 +21,9 @@ class KeyValueRDD: public RDD {
 
   KeyValueRDD() {}
 
-  KeyValueRDD(const std::unordered_map<K, V, Hasher<K>> &key_values) : key_values_(key_values) { }
+  KeyValueRDD(const std::unordered_map<K, V, tbb::tbb_hash<K>> &key_values) : key_values_(key_values) { }
 
-  KeyValueRDD(const tbb::concurrent_unordered_map<K, V, Hasher<K>> &key_values) {
+  KeyValueRDD(const tbb::concurrent_unordered_map<K, V, tbb::tbb_hash<K>> &key_values) {
     for (const auto &kv : key_values) {
       key_values_[kv.first] = kv.second;
     }
@@ -75,7 +75,7 @@ class KeyValueRDD: public RDD {
 
     auto mapper = create_mapper();
 
-    std::unordered_map<NK, std::vector<NV>, Hasher<NK>> kvs;
+    std::unordered_map<NK, std::vector<NV>, tbb::tbb_hash<NK>> kvs;
     for (const auto &kv : key_values_) {
       mapper->Map(kvs, kv.first, kv.second);
     }
@@ -93,7 +93,7 @@ class KeyValueRDD: public RDD {
   }
 
  private:
-  std::unordered_map<K, V, Hasher<K>> key_values_;
+  std::unordered_map<K, V, tbb::tbb_hash<K>> key_values_;
   std::string filename_;
   long long int chunk_offset_;
   int chunk_size_;

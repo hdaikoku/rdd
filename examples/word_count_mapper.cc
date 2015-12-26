@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include "word_count_mapper.h"
 
-void WordCountMapper::Map(std::unordered_map<std::string, std::vector<int>, Hasher<std::string>> &kvs,
+void WordCountMapper::Map(std::unordered_map<std::string, std::vector<int>, tbb::tbb_hash<std::string>> &kvs,
                           const long long int &key,
                           const std::string &value) {
   size_t cur = 0, pos = 0;

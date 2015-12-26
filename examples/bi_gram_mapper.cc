@@ -6,7 +6,7 @@
 
 void BiGramMapper::Map(std::unordered_map<std::pair<std::string, std::string>,
                                           std::vector<int>,
-                                          Hasher<std::pair<std::string, std::string>>> &kvs,
+                                          tbb::tbb_hash<std::pair<std::string, std::string>>> &kvs,
                        const long long int &key,
                        const std::string &value) {
   size_t cur = 0, pos = 0;
