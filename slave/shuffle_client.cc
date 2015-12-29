@@ -13,6 +13,9 @@ bool ShuffleClient::FetchBlocks() {
     clients_queue_.pop();
 
     auto sock_fd = client.Connect();
+    if (sock_fd < 0) {
+      std::cerr << "could not connect" << std::endl;
+    }
     client.Write(sock_fd, &my_rank_, sizeof(my_rank_));
     client.Read(sock_fd, header, 16);
     auto end = std::string(header).find_first_of("\r\n");
