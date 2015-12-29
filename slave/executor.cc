@@ -120,10 +120,10 @@ rdd_rpc::Response Executor::MapWithCombine(msgpack::rpc::request &req) {
     if (i == id_) {
       continue;
     }
-    executors.push_back(std::make_pair(executors_[i].first, std::to_string(60090 + i)));
+    executors.push_back(std::make_pair(executors_[i].first, "60090"));
   }
 
-  ShuffleServer shuffle_server(std::to_string(60090 + id_), block_mgr_);
+  ShuffleServer shuffle_server(std::to_string(data_port_), block_mgr_);
   ShuffleClient shuffle_client(executors, id_, block_mgr_);
   auto server_thread = shuffle_server.Start();
   auto client_thread = shuffle_client.Start();
