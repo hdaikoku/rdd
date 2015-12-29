@@ -8,8 +8,6 @@
 bool ShuffleClient::FetchBlocks() {
   char header[16];
 
-  std::cout << "shuffle my rank: " << my_rank_ << std::endl;
-
   while (!clients_queue_.empty()) {
     auto client = clients_queue_.front();
     clients_queue_.pop();
