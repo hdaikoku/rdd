@@ -7,6 +7,8 @@
 
 #include <jubatus/msgpack/rpc/server.h>
 #include <rdd_rpc.h>
+#include <slave/shuffle_server.h>
+#include <slave/shuffle_client.h>
 #include <tbb/tbb.h>
 #include "rdd.h"
 
@@ -14,24 +16,26 @@ class Executor: public msgpack::rpc::dispatcher {
 
  public:
 
-  Executor(const std::string &addr, int job_port, int data_port)
-      : addr_(addr), job_port_(job_port), data_port_(data_port) { }
+  Executor(const std::string &addr, int job_port, int data_port, int n_executors)
+      : addr_(addr), job_port_(job_port), data_port_(data_port), block_mgr_(n_executors) {
+  }
 
   virtual void dispatch(msgpack::rpc::request req) override;
-
-  void SetExecutorId(int id);
 
  private:
   std::string addr_;
   int job_port_;
   int data_port_;
   int id_;
+  std::vector<std::pair<std::string, int>> executors_;
   std::unordered_map<int, tbb::concurrent_vector<std::unique_ptr<RDD>>> rdds_;
+  BlockManager block_mgr_;
 
   rdd_rpc::Response Hello(msgpack::rpc::request &req);
   rdd_rpc::Response DistributeText(msgpack::rpc::request &req);
   rdd_rpc::Response Map(msgpack::rpc::request &req);
-  rdd_rpc::Response Combine(msgpack::rpc::request &req);
+  rdd_rpc::Response MapWithCombine(msgpack::rpc::request &req);
+  //rdd_rpc::Response Combine(msgpack::rpc::request &req);
   rdd_rpc::Response ShuffleSrv(msgpack::rpc::request &req);
   rdd_rpc::Response ShuffleCli(msgpack::rpc::request &req);
   rdd_rpc::Response Reduce(msgpack::rpc::request &req);

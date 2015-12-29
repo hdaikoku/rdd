@@ -86,9 +86,15 @@ class KeyValueRDD: public RDD {
     return std::unique_ptr<KeyValuesRDD<NK, NV>>(new KeyValuesRDD<NK, NV>(kvs));
   }
 
+  virtual void Pack(std::vector<msgpack::sbuffer> &buffers) const override {}
+  virtual void Unpack(long len, const char *buf) override {}
+
+  virtual void PutBlocks(BlockManager &block_mgr) override {}
+  virtual void GetBlocks(BlockManager &block_mgr, int my_rank) override {}
+
   virtual void Print() override {
     for (const auto kvs : key_values_) {
-      std::cout << to_string(kvs.first) << ": " << kvs.second << std::endl;
+      std::cout << ToString(kvs.first) << ": " << kvs.second << std::endl;
     }
   }
 

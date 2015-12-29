@@ -6,13 +6,13 @@
 #include "rdd_rpc.h"
 #include "master/rdd_context.h"
 
-std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_filename) {
+std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_mapper) {
   std::vector<msgpack::rpc::future> fs;
   int new_rdd_id = rc_->GetNewRddId();
 
   for (auto o : owners_) {
     rc_->SetTimeout(o, 180);
-    fs.push_back(rc_->Call("map", o, rdd_id_, dl_filename, new_rdd_id));
+    fs.push_back(rc_->Call("map", o, rdd_id_, dl_mapper, new_rdd_id));
   }
 
   for (auto f : fs) {
@@ -25,11 +25,21 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_fil
 }
 
 std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_mapper, const std::string &dl_combiner) {
-  auto key_values = Map(dl_mapper);
+  std::vector<msgpack::rpc::future> fs;
+  int new_rdd_id = rc_->GetNewRddId();
 
-  key_values->Combine(dl_combiner);
+  for (auto o : owners_) {
+    rc_->SetTimeout(o, 180);
+    fs.push_back(rc_->Call("map_with_combine", o, rdd_id_, dl_mapper, dl_combiner, new_rdd_id));
+  }
 
-  return key_values;
+  for (auto f : fs) {
+    if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
+      return nullptr;
+    }
+  }
+
+  return std::unique_ptr<KeyValuesRDDStub>(new KeyValuesRDDStub(rc_, new_rdd_id, owners_));
 }
 
 
