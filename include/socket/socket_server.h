@@ -17,7 +17,6 @@ class SocketServer: public SocketCommon {
 
   int Accept();
 
-
   virtual bool SetSockOpt() override;
  private:
   std::string server_port_;

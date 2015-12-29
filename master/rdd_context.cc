@@ -8,8 +8,8 @@
 #include "rdd_rpc.h"
 
 void RDDContext::Init() {
-  // default size of chunks: 128 MB
-  default_chunk_size_ = (1 << 27);
+  // default size of chunks: 32 MB
+  default_chunk_size_ = (1 << 25);
   last_rdd_id_ = 0;
   next_dst_id_ = 0;
   n_slaves_ = slaves_.size();
@@ -19,7 +19,7 @@ void RDDContext::Init() {
   std::vector<msgpack::rpc::future> fs;
   int slave_id;
   for (slave_id = 0; slave_id < n_slaves_; slave_id++) {
-    fs.push_back(Call("hello", slave_id, slave_id));
+    fs.push_back(Call("hello", slave_id, slave_id, slaves_));
   }
 
   for (slave_id = 0; slave_id < n_slaves_; slave_id++) {

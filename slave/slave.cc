@@ -10,15 +10,15 @@ using namespace msgpack;
 int main(int argc, const char **argv) {
   int job_port, data_port;
 
-  if (argc != 3) {
-    cerr << "Usage: " << argv[0] << " [job_port] [data_port]" << endl;
+  if (argc != 4) {
+    cerr << "Usage: " << argv[0] << " [job_port] [data_port] [n_reducers]" << endl;
     return 1;
   }
   job_port = stoi(argv[1]);
   data_port = stoi(argv[2]);
 
   rpc::server job_server;
-  std::unique_ptr<rpc::dispatcher> dp(new Executor("localhost", job_port, data_port));
+  std::unique_ptr<rpc::dispatcher> dp(new Executor("localhost", job_port, data_port, std::stoi(argv[4])));
   job_server.serve(dp.get());
   job_server.listen("0.0.0.0", job_port);
   cout << "Now Listening on port: " << job_port << endl;
