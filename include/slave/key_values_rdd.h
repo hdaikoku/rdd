@@ -104,7 +104,6 @@ class KeyValuesRDD: public RDD {
     std::vector<msgpack::sbuffer> buffers(n_reducers);
     Pack(buffers);
     for (int i = 0; i < n_reducers; ++i) {
-      std::cout << "put " << buffers[i].size() << " bytes" << std::endl;
       block_mgr.PutBlock(i, buffers[i].size(), std::unique_ptr<char[]>(buffers[i].release()));
     }
     key_values_.clear();

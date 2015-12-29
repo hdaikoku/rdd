@@ -24,6 +24,7 @@ void ShuffleServer::Dispatch() {
     int client_id = 0;
     if (server_.Read(sock_fd, &client_id, sizeof(client_id)) < 0) {
       std::cerr << "read failed" << std::endl;
+      close(sock_fd);
       continue;
     }
 
