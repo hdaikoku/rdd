@@ -18,7 +18,7 @@ int main(int argc, const char **argv) {
   data_port = stoi(argv[2]);
 
   rpc::server job_server;
-  std::unique_ptr<rpc::dispatcher> dp(new Executor("localhost", job_port, data_port, std::stoi(argv[3fi])));
+  std::unique_ptr<rpc::dispatcher> dp(new Executor("localhost", job_port, data_port, std::stoi(argv[3])));
   job_server.serve(dp.get());
   job_server.listen("0.0.0.0", job_port);
   cout << "Now Listening on port: " << job_port << endl;
