@@ -74,6 +74,15 @@ ssize_t RDMACommon::WriteWithProbe(int sock_fd, const void *buf, size_t len) con
   return Write(sock_fd, buf, len);
 }
 
+ssize_t RDMACommon::WriteWithHeader(int sock_fd, const void *buf, size_t len) const {
+  std::string header(std::to_string(len) + "\r\n");
+  if (Write(sock_fd, header.c_str(), 16) < 0) {
+    return -1;
+  }
+
+  return Write(sock_fd, buf, len);
+}
+
 ssize_t RDMACommon::Read(int sock_fd, void *buf, size_t len) const {
   size_t offset = 0;
   ssize_t ret = 0;
@@ -102,6 +111,24 @@ std::unique_ptr<char[]> RDMACommon::ReadWithProbe(int sock_fd, size_t &len) cons
     return nullptr;
   }
 
+  if (Read(sock_fd, buf.get(), len) < 0) {
+    return nullptr;
+  }
+
+  return buf;
+}
+
+std::unique_ptr<char[]> RDMACommon::ReadWithHeader(int sock_fd, size_t &len) const {
+  char header[16];
+  if (Read(sock_fd, header, 16) < 0) {
+    return nullptr;
+  }
+
+  auto end = std::string(header).find_first_of("\r\n");
+  header[end] = '\0';
+
+  len = std::stol(header);
+  std::unique_ptr<char[]> buf(new char[len]);
   if (Read(sock_fd, buf.get(), len) < 0) {
     return nullptr;
   }

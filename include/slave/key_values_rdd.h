@@ -120,7 +120,7 @@ class KeyValuesRDD: public RDD {
     }
 
     size_t len = 0;
-    auto rbuf = server.ReadWithProbe(sock_fd, len);
+    auto rbuf = server.ReadWithHeader(sock_fd, len);
     if (!rbuf) {
       std::cerr << "read failed" << std::endl;
       return false;
@@ -132,7 +132,7 @@ class KeyValuesRDD: public RDD {
     msgpack::sbuffer sbuf;
     PackKeyValuesFor(dest_id, n_reducers, sbuf);
 
-    if (server.WriteWithProbe(sock_fd, sbuf.data(), sbuf.size()) < 0) {
+    if (server.WriteWithHeader(sock_fd, sbuf.data(), sbuf.size()) < 0) {
       std::cerr << "write failed" << std::endl;
       return false;
     }
@@ -154,14 +154,14 @@ class KeyValuesRDD: public RDD {
     msgpack::sbuffer sbuf;
     PackKeyValuesFor(dest_id, n_reducers, sbuf);
 
-    if (client.WriteWithProbe(sock_fd, sbuf.data(), sbuf.size()) < 0) {
+    if (client.WriteWithHeader(sock_fd, sbuf.data(), sbuf.size()) < 0) {
       std::cerr << "write failed" << std::endl;
       return false;
     }
     free(sbuf.release());
 
     size_t len = 0;
-    auto rbuf = client.ReadWithProbe(sock_fd, len);
+    auto rbuf = client.ReadWithHeader(sock_fd, len);
     if (!rbuf) {
       std::cerr << "read failed" << std::endl;
       return false;

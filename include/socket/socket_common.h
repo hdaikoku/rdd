@@ -18,8 +18,10 @@ class SocketCommon {
   struct addrinfo *InitSocket(const char *addr, const char *port, int flags);
   ssize_t Write(int sock_fd, const void *buf, size_t len) const;
   ssize_t WriteWithProbe(int sock_fd, const void *buf, size_t len) const;
+  ssize_t WriteWithHeader(int sock_fd, const void *buf, size_t len) const;
   ssize_t Read(int sock_fd, void *buf, size_t len) const;
   std::unique_ptr<char[]> ReadWithProbe(int sock_fd, size_t &len) const;
+  std::unique_ptr<char[]> ReadWithHeader(int sock_fd, size_t &len) const;
 
   virtual bool SetSockOpt();
 
