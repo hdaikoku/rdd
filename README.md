@@ -4,7 +4,7 @@ A C++ implementation of [RDD](https://www.usenix.org/system/files/conference/nsd
 
 ## Requirements ##
 
-* clang or gcc/g++ 4.8+
+* clang or gcc/g++ 4.8+ or Intel Compiler
 * CMake 2.8+
 * [jubatus-msgpack-rpc](https://github.com/jubatus/jubatus-msgpack-rpc/tree/master/cpp)
 * [Intel Threading Building Blocks](https://www.threadingbuildingblocks.org/)
