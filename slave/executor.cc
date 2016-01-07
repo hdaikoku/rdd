@@ -114,7 +114,7 @@ rdd_rpc::Response Executor::MapWithCombine(msgpack::rpc::request &req) {
 
   int rdd_id, new_rdd_id;
   std::string dl_mapper, dl_combiner;
-  std::unordered_set<int> reducer_ids;
+  std::vector<int> reducer_ids;
   ParseParams(req, rdd_id, dl_mapper, dl_combiner, reducer_ids, new_rdd_id);
 
   std::vector<std::pair<std::string, int>> executors;
