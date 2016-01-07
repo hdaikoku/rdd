@@ -4,6 +4,8 @@
 
 #include <sstream>
 #include <fstream>
+#include <slave/rpc_shuffle_server.h>
+#include <slave/rpc_shuffle_client.h>
 #include "executor.h"
 #include "key_value_rdd.h"
 #include "key_values_rdd.h"
@@ -51,7 +53,7 @@ void Executor::dispatch(msgpack::rpc::request req) {
     }
 
   } catch (msgpack::type_error &e) {
-    std::cerr << "ERROR: " << std::endl;
+    std::cerr << "ERROR: type_error" << std::endl;
     req.error(msgpack::rpc::ARGUMENT_ERROR);
   }
 }
@@ -114,18 +116,24 @@ rdd_rpc::Response Executor::MapWithCombine(msgpack::rpc::request &req) {
   std::string dl_mapper, dl_combiner;
   ParseParams(req, rdd_id, dl_mapper, dl_combiner, new_rdd_id);
 
-  std::vector<std::pair<std::string, std::string>> executors;
-
+  std::vector<std::pair<std::string, int>> executors;
   for (int i = 0; i < executors_.size(); ++i) {
     if (i == id_) {
       continue;
     }
-    executors.push_back(std::make_pair(executors_[i].first, "60090"));
+    executors.push_back(std::make_pair(executors_[i].first, 60090 + i));
   }
 
-  ShuffleServer shuffle_server(std::to_string(data_port_), block_mgr_);
-  ShuffleClient shuffle_client(executors, id_, block_mgr_);
-  auto server_thread = shuffle_server.Start();
+
+  //ShuffleServer shuffle_server(std::to_string(data_port_), block_mgr_);
+  //ShuffleClient shuffle_client(executors, id_, block_mgr_);
+  //auto server_thread = shuffle_server.Start();
+  //auto client_thread = shuffle_client.Start();
+
+  RPCShuffleServer shuffle_server(block_mgr_);
+  shuffle_server.instance.listen("0.0.0.0", data_port_);
+  shuffle_server.instance.start(1);
+  RPCShuffleClient shuffle_client(executors, id_, block_mgr_);
   auto client_thread = shuffle_client.Start();
 
   auto &rdds = rdds_[rdd_id];
@@ -145,8 +153,11 @@ rdd_rpc::Response Executor::MapWithCombine(msgpack::rpc::request &req) {
   );
   block_mgr_.Finalize();
 
-  server_thread.join();
   client_thread.join();
+  shuffle_server.instance.join();
+
+  //server_thread.join();
+  //client_thread.join();
 
   return rdd_rpc::Response::OK;
 }

@@ -20,6 +20,5 @@ void BlockManager::PutBlock(int buffer_id, size_t len, std::unique_ptr<char[]> b
 }
 
 void BlockManager::Finalize() {
-  std::cout << "finalized" << std::endl;
   finalized_ = true;
 }
