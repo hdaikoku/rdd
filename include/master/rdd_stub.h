@@ -7,18 +7,18 @@
 
 class RDDContext;
 
-#include <set>
+#include <unordered_set>
 
 class RDDStub {
 
  public:
 
-  RDDStub(RDDContext *rc_, int rdd_id_, const std::set<int> &owners_)
+  RDDStub(RDDContext *rc_, int rdd_id_, const std::unordered_set<int> &owners_)
       : rdd_id_(rdd_id_), owners_(owners_), rc_(rc_) { }
 
  protected:
   int rdd_id_;
-  std::set<int> owners_;
+  std::unordered_set<int> owners_;
   RDDContext *rc_;
 };
 
