@@ -12,7 +12,7 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
 
   for (auto o : owners_) {
     rc_->SetTimeout(o, 180);
-    fs.push_back(rc_->Call("map", o, rdd_id_, dl_mapper, owners_, new_rdd_id));
+    fs.push_back(rc_->Call("map", o, rdd_id_, dl_mapper, new_rdd_id));
   }
 
   for (auto f : fs) {
@@ -27,10 +27,11 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
 std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_mapper, const std::string &dl_combiner) {
   std::vector<msgpack::rpc::future> fs;
   int new_rdd_id = rc_->GetNewRddId();
+  std::vector<int> owners(owners_.begin(), owners_.end());
 
   for (auto o : owners_) {
     rc_->SetTimeout(o, 180);
-    fs.push_back(rc_->Call("map_with_combine", o, rdd_id_, dl_mapper, dl_combiner, owners_, new_rdd_id));
+    fs.push_back(rc_->Call("map_with_combine", o, rdd_id_, dl_mapper, dl_combiner, owners, new_rdd_id));
   }
 
   for (auto f : fs) {
