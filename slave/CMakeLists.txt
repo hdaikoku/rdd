@@ -13,7 +13,9 @@ set(SLAVE_SOURCE_FILES
         shuffle_client.cc ../include/slave/shuffle_client.h
         ../socket/socket_common.cc
         ../socket/socket_server.cc
-        ../socket/socket_client.cc)
+        ../socket/socket_client.cc
+        rpc_shuffle_server.cc ../include/slave/rpc_shuffle_server.h
+        rpc_shuffle_client.cc ../include/slave/rpc_shuffle_client.h)
 
 add_executable(RDDSlave ${SLAVE_SOURCE_FILES})
 
