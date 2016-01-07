@@ -114,26 +114,26 @@ rdd_rpc::Response Executor::MapWithCombine(msgpack::rpc::request &req) {
 
   int rdd_id, new_rdd_id;
   std::string dl_mapper, dl_combiner;
-  ParseParams(req, rdd_id, dl_mapper, dl_combiner, new_rdd_id);
+  std::unordered_set<int> reducer_ids;
+  ParseParams(req, rdd_id, dl_mapper, dl_combiner, reducer_ids, new_rdd_id);
 
   std::vector<std::pair<std::string, int>> executors;
-  for (int i = 0; i < executors_.size(); ++i) {
-    if (i == id_) {
-      continue;
+  for (const auto &i : reducer_ids) {
+    if (i != id_) {
+      executors.push_back(std::make_pair(executors_[i].GetAddr(), executors_[i].GetDataPort()));
     }
-    executors.push_back(std::make_pair(executors_[i].first, 60090 + i));
   }
-
 
   //ShuffleServer shuffle_server(std::to_string(data_port_), block_mgr_);
   //ShuffleClient shuffle_client(executors, id_, block_mgr_);
   //auto server_thread = shuffle_server.Start();
   //auto client_thread = shuffle_client.Start();
 
-  RPCShuffleServer shuffle_server(block_mgr_);
-  shuffle_server.instance.listen("0.0.0.0", data_port_);
+  block_mgr_.reset(new BlockManager(reducer_ids.size()));
+  RPCShuffleServer shuffle_server(*block_mgr_);
+  shuffle_server.instance.listen("0.0.0.0", executors_[id_].GetDataPort());
   shuffle_server.instance.start(1);
-  RPCShuffleClient shuffle_client(executors, id_, block_mgr_);
+  RPCShuffleClient shuffle_client(executors, id_, *block_mgr_);
   auto client_thread = shuffle_client.Start();
 
   auto &rdds = rdds_[rdd_id];
@@ -146,12 +146,12 @@ rdd_rpc::Response Executor::MapWithCombine(msgpack::rpc::request &req) {
           auto new_rdd = static_cast<KeyValueRDD<long long int, std::string> *>(rdds[i].get())
               ->Map<std::pair<std::string, std::string>, int>(dl_mapper);
           new_rdd->Combine(dl_combiner);
-          new_rdd->PutBlocks(block_mgr_);
+          new_rdd->PutBlocks(*block_mgr_);
           new_rdds.push_back(std::move(new_rdd));
         }
       }
   );
-  block_mgr_.Finalize();
+  block_mgr_->Finalize();
 
   client_thread.join();
   shuffle_server.instance.join();
@@ -251,7 +251,7 @@ rdd_rpc::Response Executor::Reduce(msgpack::rpc::request &req) {
   ParseParams(req, rdd_id, dl_filename, new_rdd_id);
 
   auto kvs_rdd = static_cast<KeyValuesRDD<std::pair<std::string, std::string>, int> *>(rdds_[rdd_id][0].get());
-  kvs_rdd->GetBlocks(block_mgr_, id_);
+  kvs_rdd->GetBlocks(*block_mgr_, id_);
 
   // TODO dirty hack :)
   rdds_[new_rdd_id].push_back(kvs_rdd->Reduce<std::pair<std::string, std::string>, int>(dl_filename));

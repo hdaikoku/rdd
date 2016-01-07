@@ -17,8 +17,7 @@ class BlockManager {
  public:
 
   BlockManager(int n_buffers)
-      : finalized_(false), n_buffers_(n_buffers), buffers_(n_buffers) {
-  }
+      : finalized_(false), n_buffers_(n_buffers), buffers_(n_buffers) { }
 
   std::unique_ptr<char[]> GetBlock(int buffer_id, long &len);
 

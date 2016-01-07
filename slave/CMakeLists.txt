@@ -6,6 +6,7 @@ include_directories(../include/slave)
 
 set(SLAVE_SOURCE_FILES
         slave.cc
+        ../include/slave_context.h
         executor.cc ../include/slave/executor.h
         rdd.cc ../include/slave/rdd.h
         block_manager.cc ../include/slave/block_manager.h

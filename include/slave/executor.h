@@ -6,19 +6,19 @@
 #define SLAVERDD_EXECUTOR_H
 
 #include <jubatus/msgpack/rpc/server.h>
-#include <rdd_rpc.h>
-#include <slave/shuffle_server.h>
-#include <slave/shuffle_client.h>
 #include <tbb/tbb.h>
+#include "rdd_rpc.h"
+#include "slave_context.h"
 #include "rdd.h"
+#include "slave/shuffle_server.h"
+#include "slave/shuffle_client.h"
 
 class Executor: public msgpack::rpc::dispatcher {
 
  public:
 
-  Executor(const std::string &addr, int job_port, int data_port, int n_executors)
-      : addr_(addr), job_port_(job_port), data_port_(data_port), block_mgr_(n_executors) {
-  }
+  Executor(const std::string &addr, int job_port)
+      : addr_(addr), job_port_(job_port) { }
 
   virtual void dispatch(msgpack::rpc::request req) override;
 
@@ -27,9 +27,9 @@ class Executor: public msgpack::rpc::dispatcher {
   int job_port_;
   int data_port_;
   int id_;
-  std::vector<std::pair<std::string, int>> executors_;
+  std::vector<SlaveContext> executors_;
   std::unordered_map<int, tbb::concurrent_vector<std::unique_ptr<RDD>>> rdds_;
-  BlockManager block_mgr_;
+  std::unique_ptr<BlockManager> block_mgr_;
 
   rdd_rpc::Response Hello(msgpack::rpc::request &req);
   rdd_rpc::Response DistributeText(msgpack::rpc::request &req);
@@ -78,6 +78,18 @@ class Executor: public msgpack::rpc::dispatcher {
     p2 = params.template get<1>();
     p3 = params.template get<2>();
     p4 = params.template get<3>();
+  }
+
+  template<typename P1, typename P2, typename P3, typename P4, typename P5>
+  void ParseParams(msgpack::rpc::request &req, P1 &p1, P2 &p2, P3 &p3, P4 &p4, P5 &p5) const {
+    msgpack::type::tuple<P1, P2, P3, P4, P5> params;
+
+    req.params().convert(&params);
+    p1 = params.template get<0>();
+    p2 = params.template get<1>();
+    p3 = params.template get<2>();
+    p4 = params.template get<3>();
+    p5 = params.template get<4>();
   }
 
 };

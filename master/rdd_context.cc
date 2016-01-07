@@ -9,7 +9,7 @@
 
 void RDDContext::Init() {
   // default size of chunks: 32 MB
-  default_chunk_size_ = (1 << 25);
+  default_chunk_size_ = (1 << 27);
   last_rdd_id_ = 0;
   next_dst_id_ = 0;
   n_slaves_ = slaves_.size();
@@ -25,13 +25,13 @@ void RDDContext::Init() {
   for (slave_id = 0; slave_id < n_slaves_; slave_id++) {
     if (fs[slave_id].get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
       std::cerr << "could not connect to "
-          << slaves_[slave_id].first << ":" << slaves_[slave_id].second << std::endl;
+          << slaves_[slave_id].GetAddr() << ":" << slaves_[slave_id].GetJobPort() << std::endl;
     }
   }
 }
 
 void RDDContext::SetTimeout(int dest, unsigned int timeout) {
-  sp_.get_session(slaves_[dest].first, slaves_[dest].second).set_timeout(timeout);
+  sp_.get_session(slaves_[dest].GetAddr(), slaves_[dest].GetJobPort()).set_timeout(timeout);
 }
 
 // Returns new RDD id
@@ -44,7 +44,7 @@ std::unique_ptr<KeyValueRDDStub> RDDContext::TextFile(const std::string &filenam
 
   std::vector<msgpack::rpc::future> fs;
   std::unordered_map<int, std::vector<std::pair<long long int, int>>> index;
-  std::set<int> owners;
+  std::unordered_set<int> owners;
   int owner;
   int rdd_id = GetNewRddId();
 
@@ -83,15 +83,15 @@ std::unique_ptr<KeyValueRDDStub> RDDContext::TextFile(const std::string &filenam
   for (auto f : fs) {
     if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
       std::cerr << "could not distribute to "
-          << slaves_[i].first << ":" << slaves_[i].second << std::endl;
+          << slaves_[i].GetAddr() << ":" << slaves_[i].GetJobPort() << std::endl;
+      continue;
     }
-    owners.insert(i);
-    i++;
+    owners.insert(i++);
   }
 
   return std::unique_ptr<KeyValueRDDStub>(new KeyValueRDDStub(this, rdd_id, owners));
 }
 
 std::string RDDContext::GetSlaveAddrById(const int &id) {
-  return slaves_[id].first;
+  return slaves_[id].GetAddr();
 }
