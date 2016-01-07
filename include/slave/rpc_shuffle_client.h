@@ -12,8 +12,7 @@
 class RPCShuffleClient {
  public:
   RPCShuffleClient(const std::vector<std::pair<std::string, int>> &servers, int my_rank, BlockManager &block_mgr_)
-      : servers_(servers), block_mgr_(block_mgr_), my_rank_(my_rank) {
-  }
+      : servers_(servers.begin(), servers.end()), block_mgr_(block_mgr_), my_rank_(my_rank) { }
 
   std::thread Start() {
     return std::thread([=]() {
@@ -24,7 +23,7 @@ class RPCShuffleClient {
  private:
   BlockManager &block_mgr_;
   msgpack::rpc::session_pool sp_;
-  std::vector<std::pair<std::string, int>> servers_;
+  std::deque<std::pair<std::string, int>> servers_;
   int my_rank_;
 
   bool FetchBlocks();
