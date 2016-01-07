@@ -15,12 +15,15 @@ void RPCShuffleServer::dispatch(msgpack::rpc::request req) {
       int client_id = params.get<0>();
       long block_len = 0;
       auto block = block_mgr_.GetBlock(client_id, block_len);
+      std::string header(std::to_string(block_len) + "\r\n");
+
       if (block_len > 0) {
-        req.result(std::string(std::to_string(block_len) + "\r\n" + block.get()));
+        std::string body(block.get(), block_len);
+        req.result(header.append(body));
       } else {
+        req.result(header);
         if (block_len == -1)
           n_finished_++;
-        req.result(std::string(std::to_string(block_len) + "\r\n"));
       }
 
     } else {

@@ -21,7 +21,7 @@ bool RPCShuffleClient::FetchBlocks() {
       servers_.pop_front();
       try {
         auto result = f.get<std::string>();
-        auto header_end = result.find_first_of("\r\n");
+        auto header_end = result.find("\r\n");
         auto len = std::stol(result.substr(0, header_end));
         switch (len) {
           case -1:
