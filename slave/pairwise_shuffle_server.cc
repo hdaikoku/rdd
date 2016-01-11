@@ -44,7 +44,7 @@ void PairwiseShuffleServer::PackBlocks(int client_id, msgpack::sbuffer &sbuf) {
   long len = 0;
   while (true) {
     auto block = block_mgr_.GetBlock(client_id, len);
-    if (len == 0) {
+    if (len == -1) {
       break;
     }
     msgpack::pack(&sbuf, std::string(block.get(), len));

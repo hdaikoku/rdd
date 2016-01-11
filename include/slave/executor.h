@@ -25,7 +25,6 @@ class Executor: public msgpack::rpc::dispatcher {
  private:
   std::string addr_;
   int job_port_;
-  int data_port_;
   int id_;
   std::vector<SlaveContext> executors_;
   std::unordered_map<int, tbb::concurrent_vector<std::unique_ptr<RDD>>> rdds_;
