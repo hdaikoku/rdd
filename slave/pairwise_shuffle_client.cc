@@ -10,6 +10,7 @@
 void PairwiseShuffleClient::Start(int server_id, const std::string &server_addr, int server_port) {
   int sock_fd;
   SocketClient client(server_addr, std::to_string(server_port));
+  std::cout << "connecting to " << server_addr << ":" << server_port << std::endl;
 
   if ((sock_fd = client.Connect()) < 0) {
     std::cerr << "could not connect to: " << server_addr << ":" << server_port << std::endl;
@@ -39,7 +40,7 @@ void PairwiseShuffleClient::PackBlocks(int server_id, msgpack::sbuffer &sbuf) {
   long len = 0;
   while (true) {
     auto block = block_mgr_.GetBlock(server_id, len);
-    if (len == 0) {
+    if (len == -1) {
       break;
     }
     msgpack::pack(&sbuf, std::string(block.get(), len));

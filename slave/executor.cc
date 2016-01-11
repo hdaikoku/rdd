@@ -124,6 +124,7 @@ rdd_rpc::Response Executor::MapWithCombine(msgpack::rpc::request &req) {
   std::string dl_mapper, dl_combiner;
   ParseParams(req, rdd_id, dl_mapper, dl_combiner, new_rdd_id);
 
+  block_mgr_.reset(new BlockManager(executors_.size()));
   auto &rdds = rdds_[rdd_id];
   auto &new_rdds = rdds_[new_rdd_id];
   tbb::parallel_for(
@@ -196,7 +197,7 @@ rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
   ParseParams(req, dest_id);
 
   PairwiseShuffleServer shuffle_server(*block_mgr_);
-  shuffle_server.Start(dest_id, data_port_);
+  shuffle_server.Start(dest_id, executors_[id_].GetDataPort());
 
   return rdd_rpc::Response::OK;
 }
@@ -206,7 +207,7 @@ rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
 
   std::string server_addr;
   int dest_id;
-  ParseParams(req, dest_id);
+  ParseParams(req, dest_id, server_addr);
 
   PairwiseShuffleClient shuffle_client(*block_mgr_);
   shuffle_client.Start(dest_id, server_addr, executors_[dest_id].GetDataPort());
