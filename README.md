@@ -25,7 +25,7 @@ $ make
 1. Start slave(s)
 
     ```
-    $ ./slave/RDDSlave [job_port] [data_port]
+    $ ./slave/RDDSlave [job_port]
     ```
     
 2.  Start your master application (e.g. WordCount)
@@ -51,12 +51,12 @@ $ make
 
 3. Edit slaves.conf to match with [num_of_slaves]
 
-        docker_slave_1 50090
-        docker_slave_2 50090
+        docker_slave_1 50090 60090
+        docker_slave_2 50090 60090
         .
         .
         .
-        docker_slave_[num_of_slaves] 50090
+        docker_slave_[num_of_slaves] [job_port] [data_port]
     
 4. copy the target text file as "word_count.txt"
 
