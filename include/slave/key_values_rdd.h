@@ -30,16 +30,6 @@ class KeyValuesRDD: public RDD {
     }
   }
 
-  //void MergeTo(KeyValuesRDD<K, V> *other) {
-  //  for (const auto &kvs : key_values_) {
-  //    other->Insert(kvs);
-  //  }
-  //}
-  //
-  //void Insert(const std::pair<K, std::vector<V>> &p) {
-  //  std::copy(p.second.begin(), p.second.end(), std::back_inserter(key_values_[p.first]));
-  //}
-
   bool Combine(const std::string &dl_filename) {
     void *handle = LoadLib(dl_filename);
     if (handle == NULL) {
@@ -120,76 +110,6 @@ class KeyValuesRDD: public RDD {
     }
   }
 
-  //bool ShuffleServer(int dest_id, int n_reducers, int port) {
-  //  int sock_fd;
-  //  SocketServer server(std::to_string(port));
-  //
-  //  if (!server.Listen()) {
-  //    std::cerr << "listen failed: " << port << std::endl;
-  //    return false;
-  //  }
-  //  std::cout << "listening: " << port << std::endl;
-  //
-  //  if ((sock_fd = server.Accept()) < 0) {
-  //    perror("raccept");
-  //    return false;
-  //  }
-  //
-  //  size_t len = 0;
-  //  auto rbuf = server.ReadWithProbe(sock_fd, len);
-  //  if (!rbuf) {
-  //    std::cerr << "read failed" << std::endl;
-  //    return false;
-  //  }
-  //
-  //  UnpackKeyValues(rbuf.get(), len);
-  //  rbuf.reset(nullptr);
-  //
-  //  msgpack::sbuffer sbuf;
-  //  PackKeyValuesFor(dest_id, n_reducers, sbuf);
-  //
-  //  if (server.WriteWithProbe(sock_fd, sbuf.data(), sbuf.size()) < 0) {
-  //    std::cerr << "write failed" << std::endl;
-  //    return false;
-  //  }
-  //
-  //  return true;
-  //}
-
-  //bool ShuffleClient(const std::string &dst, int dest_id, int n_reducers) {
-  //  int sock_fd;
-  //  // TODO temporary hack for specifying port
-  //  int port = 60090;
-  //  SocketClient client(dst, std::to_string(port));
-  //
-  //  if ((sock_fd = client.Connect()) < 0) {
-  //    std::cerr << "could not connect to: " << dst << ":" << port << std::endl;
-  //    return false;
-  //  }
-  //
-  //  msgpack::sbuffer sbuf;
-  //  PackKeyValuesFor(dest_id, n_reducers, sbuf);
-  //
-  //  if (client.WriteWithProbe(sock_fd, sbuf.data(), sbuf.size()) < 0) {
-  //    std::cerr << "write failed" << std::endl;
-  //    return false;
-  //  }
-  //  free(sbuf.release());
-  //
-  //  size_t len = 0;
-  //  auto rbuf = client.ReadWithProbe(sock_fd, len);
-  //  if (!rbuf) {
-  //    std::cerr << "read failed" << std::endl;
-  //    return false;
-  //  }
-  //
-  //  //  prepare for receiving the data
-  //  UnpackKeyValues(rbuf.get(), len);
-  //  rbuf.reset(nullptr);
-  //
-  //  return true;
-  //}
-
   virtual void Print() override {
     for (const auto kvs : key_values_) {
       std::cout << ToString(kvs.first) << ": ";
@@ -225,35 +145,6 @@ class KeyValuesRDD: public RDD {
                 std::back_inserter(key_values_[received.first]));
     }
   }
-
-  //void PackKeyValuesFor(int dest, int n_reducers, msgpack::sbuffer &sbuf) {
-  //  auto hasher = key_values_.hash_function();
-  //
-  //  auto iter = key_values_.begin();
-  //  while (iter != key_values_.end()) {
-  //    if ((hasher(iter->first) % n_reducers) == dest) {
-  //      msgpack::pack(&sbuf, *iter);
-  //      iter = key_values_.erase(iter);
-  //    } else {
-  //      iter++;
-  //    }
-  //  }
-  //}
-
-  //void UnpackKeyValues(const char *buf, size_t len) {
-  //  msgpack::unpacker upc;
-  //  upc.reserve_buffer(len);
-  //  memcpy(upc.buffer(), buf, len);
-  //  upc.buffer_consumed(len);
-  //
-  //  msgpack::unpacked result;
-  //  while (upc.next(&result)) {
-  //    std::pair<K, std::vector<V>> received;
-  //    result.get().convert(&received);
-  //    std::copy(received.second.begin(), received.second.end(),
-  //              std::back_inserter(key_values_[received.first]));
-  //  }
-  //}
 
 };
 

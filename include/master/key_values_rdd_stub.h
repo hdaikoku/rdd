@@ -14,15 +14,15 @@ class KeyValuesRDDStub: public RDDStub {
 
  public:
 
-  KeyValuesRDDStub(RDDContext *rc_, int rdd_id_, const std::unordered_set<int> &owners_) : RDDStub(rc_, rdd_id_, owners_) { }
-
-  bool Combine(const std::string &dl_filename);
+  KeyValuesRDDStub(RDDContext *rc, int rdd_id, const std::unordered_set<int> &owners, bool shuffled)
+      : RDDStub(rc, rdd_id, owners), shuffled_(shuffled) { }
 
   std::unique_ptr<KeyValueRDDStub> Reduce(const std::string &dl_filename);
 
   void Print();
 
  private:
+  bool shuffled_;
   bool Shuffle();
 };
 
