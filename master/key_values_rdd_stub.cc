@@ -6,24 +6,10 @@
 #include <jubatus/msgpack/rpc/future.h>
 #include "master/rdd_context.h"
 
-bool KeyValuesRDDStub::Combine(const std::string &dl_filename) {
-  std::vector<msgpack::rpc::future> fs;
-
-  for (auto o : owners_) {
-    fs.push_back(rc_->Call("combine", o, rdd_id_, dl_filename));
-  }
-
-  for (auto f : fs) {
-    if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 std::unique_ptr<KeyValueRDDStub> KeyValuesRDDStub::Reduce(const std::string &dl_filename) {
-  //Shuffle();
+  if (!shuffled_) {
+    Shuffle();
+  }
 
   std::vector<msgpack::rpc::future> fs;
   int new_rdd_id = rc_->GetNewRddId();
@@ -41,7 +27,7 @@ std::unique_ptr<KeyValueRDDStub> KeyValuesRDDStub::Reduce(const std::string &dl_
   return std::unique_ptr<KeyValueRDDStub>(new KeyValueRDDStub(rc_, new_rdd_id, owners_));
 }
 
-// shuffles rdds by pairwise algorithm
+// shuffles key-values by pairwise algorithm
 bool KeyValuesRDDStub::Shuffle() {
   bool ret = true;
   std::vector<msgpack::rpc::future> fs;
@@ -52,9 +38,9 @@ bool KeyValuesRDDStub::Shuffle() {
     for (auto owner : owners_) {
       int dest = owner ^step;
       if (dest > owner) {
-        fs.push_back(rc_->Call("shuffle_srv", owner, rdd_id_, dest, owners_.size()));
+        fs.push_back(rc_->Call("shuffle_srv", owner, dest));
       } else {
-        fs.push_back(rc_->Call("shuffle_cli", owner, rdd_id_, rc_->GetSlaveAddrById(dest), dest, owners_.size()));
+        fs.push_back(rc_->Call("shuffle_cli", owner, dest, rc_->GetSlaveAddrById(dest)));
       }
     }
 

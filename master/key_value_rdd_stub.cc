@@ -21,17 +21,25 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
     }
   }
 
-  return std::unique_ptr<KeyValuesRDDStub>(new KeyValuesRDDStub(rc_, new_rdd_id, owners_));
+  return std::unique_ptr<KeyValuesRDDStub>(new KeyValuesRDDStub(rc_, new_rdd_id, owners_, false));
 }
 
-std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_mapper, const std::string &dl_combiner) {
+std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_mapper,
+                                                       const std::string &dl_combiner,
+                                                       bool overlap) {
   std::vector<msgpack::rpc::future> fs;
   int new_rdd_id = rc_->GetNewRddId();
-  std::vector<int> owners(owners_.begin(), owners_.end());
+
 
   for (auto o : owners_) {
     rc_->SetTimeout(o, 180);
-    fs.push_back(rc_->Call("map_with_combine", o, rdd_id_, dl_mapper, dl_combiner, owners, new_rdd_id));
+    if (overlap) {
+      std::vector<int> owners(owners_.begin(), owners_.end());
+      fs.push_back(rc_->Call("map_with_shuffle", o, rdd_id_, dl_mapper, dl_combiner, owners, new_rdd_id));
+    } else {
+      fs.push_back(rc_->Call("map_with_combine", o, rdd_id_, dl_mapper, dl_combiner, new_rdd_id));
+    }
+
   }
 
   for (auto f : fs) {
@@ -40,7 +48,7 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
     }
   }
 
-  return std::unique_ptr<KeyValuesRDDStub>(new KeyValuesRDDStub(rc_, new_rdd_id, owners_));
+  return std::unique_ptr<KeyValuesRDDStub>(new KeyValuesRDDStub(rc_, new_rdd_id, owners_, overlap));
 }
 
 

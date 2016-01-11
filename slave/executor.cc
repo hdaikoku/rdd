@@ -6,6 +6,8 @@
 #include <fstream>
 #include <slave/rpc_shuffle_server.h>
 #include <slave/rpc_shuffle_client.h>
+#include <slave/pairwise_shuffle_server.h>
+#include <slave/pairwise_shuffle_client.h>
 #include "executor.h"
 #include "key_value_rdd.h"
 #include "key_values_rdd.h"
@@ -30,6 +32,10 @@ void Executor::dispatch(msgpack::rpc::request req) {
     } else if (method == "map_with_combine") {
       // Map with in-mapper combining
       req.result(MapWithCombine(req));
+
+    } else if (method == "map_with_shuffle") {
+      // Map overlapped by shuffle
+      req.result(MapWithShuffle(req));
 
     } else if (method == "shuffle_srv") {
       // shuffle, act as a server
@@ -90,18 +96,20 @@ rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
   std::cout << "map called" << std::endl;
 
   int rdd_id, new_rdd_id;
-  std::string dl_filename;
-  ParseParams(req, rdd_id, dl_filename, new_rdd_id);
+  std::string dl_mapper;
+  ParseParams(req, rdd_id, dl_mapper, new_rdd_id);
 
   auto &rdds = rdds_[rdd_id];
   auto &new_rdds = rdds_[new_rdd_id];
   tbb::parallel_for(
       tbb::blocked_range<int>(0, rdds.size(), 1),
-      [&rdds, &new_rdds, &dl_filename](tbb::blocked_range<int> &range) {
+      [&](tbb::blocked_range<int> &range) {
         for (int i = range.begin(); i < range.end(); i++) {
           // TODO dirty hack :)
-          new_rdds.push_back(static_cast<KeyValueRDD<long long int, std::string> *>(rdds[i].get())
-                                 ->Map<std::pair<std::string, std::string>, int>(dl_filename));
+          auto new_rdd = static_cast<KeyValueRDD<long long int, std::string> *>(rdds[i].get())
+              ->Map<std::pair<std::string, std::string>, int>(dl_mapper);
+          new_rdd->PutBlocks(*block_mgr_);
+          new_rdds.push_back(std::move(new_rdd));
         }
       }
   );
@@ -114,6 +122,33 @@ rdd_rpc::Response Executor::MapWithCombine(msgpack::rpc::request &req) {
 
   int rdd_id, new_rdd_id;
   std::string dl_mapper, dl_combiner;
+  ParseParams(req, rdd_id, dl_mapper, dl_combiner, new_rdd_id);
+
+  auto &rdds = rdds_[rdd_id];
+  auto &new_rdds = rdds_[new_rdd_id];
+  tbb::parallel_for(
+      tbb::blocked_range<int>(0, rdds.size(), 1),
+      [&](tbb::blocked_range<int> &range) {
+        for (int i = range.begin(); i < range.end(); i++) {
+          // TODO dirty hack :)
+          auto new_rdd = static_cast<KeyValueRDD<long long int, std::string> *>(rdds[i].get())
+              ->Map<std::pair<std::string, std::string>, int>(dl_mapper);
+          new_rdd->Combine(dl_combiner);
+          new_rdd->PutBlocks(*block_mgr_);
+          new_rdds.push_back(std::move(new_rdd));
+        }
+      }
+  );
+  block_mgr_->Finalize();
+
+  return rdd_rpc::Response::OK;
+}
+
+rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
+  std::cout << "map with shuffle called" << std::endl;
+
+  int rdd_id, new_rdd_id;
+  std::string dl_mapper, dl_combiner;
   std::vector<int> reducer_ids;
   ParseParams(req, rdd_id, dl_mapper, dl_combiner, reducer_ids, new_rdd_id);
 
@@ -123,11 +158,6 @@ rdd_rpc::Response Executor::MapWithCombine(msgpack::rpc::request &req) {
       executors.push_back(std::make_pair(executors_[i].GetAddr(), executors_[i].GetDataPort()));
     }
   }
-
-  //ShuffleServer shuffle_server(std::to_string(data_port_), block_mgr_);
-  //ShuffleClient shuffle_client(executors, id_, block_mgr_);
-  //auto server_thread = shuffle_server.Start();
-  //auto client_thread = shuffle_client.Start();
 
   block_mgr_.reset(new BlockManager(reducer_ids.size()));
   RPCShuffleServer shuffle_server(*block_mgr_);
@@ -156,59 +186,17 @@ rdd_rpc::Response Executor::MapWithCombine(msgpack::rpc::request &req) {
   client_thread.join();
   shuffle_server.instance.join();
 
-  //server_thread.join();
-  //client_thread.join();
-
   return rdd_rpc::Response::OK;
 }
-
-//rdd_rpc::Response Executor::Combine(msgpack::rpc::request &req) {
-//  std::cout << "combine called" << std::endl;
-//
-//  int rdd_id;
-//  std::string dl_filename;
-//  ParseParams(req, rdd_id, dl_filename);
-//
-//  auto &rdds = rdds_[rdd_id];
-//  tbb::parallel_for(
-//      tbb::blocked_range<int>(0, rdds.size(), 1),
-//      [&rdds, &dl_filename](tbb::blocked_range<int> &range) {
-//        for (int i = range.begin(); i < range.end(); i++) {
-//          // TODO dirty hack :)
-//          static_cast<KeyValuesRDD<std::pair<std::string, std::string>, int> *>(rdds[i].get())
-//              ->Combine(dl_filename);
-//        }
-//      }
-//  );
-//
-//  return rdd_rpc::Response::OK;
-//}
 
 rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
   std::cout << "shuffle_srv called" << std::endl;
 
-  int rdd_id, dest_id, n_reducers;
-  ParseParams(req, rdd_id, dest_id, n_reducers);
+  int dest_id;
+  ParseParams(req, dest_id);
 
-  if (rdds_[rdd_id].size() > 1) {
-    int i = 0;
-    for (const auto &rdd : rdds_[rdd_id]) {
-      if (i++ == 0) continue;
-      // TODO dirty hack :)
-      //static_cast<KeyValuesRDD<std::pair<std::string, std::string>, int> *>(rdd.get())->MergeTo(
-      //    static_cast<KeyValuesRDD<std::pair<std::string, std::string>, int> *>(rdds_[rdd_id][0].get()));
-    }
-  }
-
-  auto rdd = std::move(rdds_[rdd_id][0]);
-  rdds_[rdd_id].clear();
-  rdds_[rdd_id].push_back(std::move(rdd));
-
-  // TODO dirty hack :)
-  //if (!static_cast<KeyValuesRDD<std::pair<std::string, std::string>, int> *>(rdds_[rdd_id][0].get())
-  //    ->ShuffleServer(dest_id, n_reducers, data_port_)) {
-  //  return rdd_rpc::Response::ERR;
-  //}
+  PairwiseShuffleServer shuffle_server(*block_mgr_);
+  shuffle_server.Start(dest_id, data_port_);
 
   return rdd_rpc::Response::OK;
 }
@@ -216,29 +204,12 @@ rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
 rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
   std::cout << "shuffle_cli called" << std::endl;
 
-  std::string dest;
-  int rdd_id, dest_id, n_reducers;
-  ParseParams(req, rdd_id, dest, dest_id, n_reducers);
+  std::string server_addr;
+  int dest_id;
+  ParseParams(req, dest_id);
 
-  if (rdds_[rdd_id].size() > 1) {
-    int i = 0;
-    for (const auto &rdd : rdds_[rdd_id]) {
-      if (i++ == 0) continue;
-      // TODO dirty hack :)
-      //static_cast<KeyValuesRDD<std::pair<std::string, std::string>, int> *>(rdd.get())->MergeTo(
-      //    static_cast<KeyValuesRDD<std::pair<std::string, std::string>, int> *>(rdds_[rdd_id][0].get()));
-    }
-  }
-
-  auto rdd = std::move(rdds_[rdd_id][0]);
-  rdds_[rdd_id].clear();
-  rdds_[rdd_id].push_back(std::move(rdd));
-
-  // TODO dirty hack :)
-  //if (!static_cast<KeyValuesRDD<std::pair<std::string, std::string>, int> *>(rdds_[rdd_id][0].get())
-  //    ->ShuffleClient(dest, dest_id, n_reducers)) {
-  //  return rdd_rpc::Response::ERR;
-  //}
+  PairwiseShuffleClient shuffle_client(*block_mgr_);
+  shuffle_client.Start(dest_id, server_addr, executors_[dest_id].GetDataPort());
 
   return rdd_rpc::Response::OK;
 }
