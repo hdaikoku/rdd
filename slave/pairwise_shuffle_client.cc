@@ -57,8 +57,9 @@ void PairwiseShuffleClient::UnpackBlocks(int server_id, const char *buf, long le
   while (upc.next(&result)) {
     std::string received;
     result.get().convert(&received);
-    std::unique_ptr<char[]> block(new char[len]);
-    received.copy(block.get(), len);
-    block_mgr_.PutBlock(server_id, received.length(), std::move(block));
+    auto block_size = received.length();
+    std::unique_ptr<char[]> block(new char[block_size]);
+    received.copy(block.get(), block_size);
+    block_mgr_.PutBlock(server_id, block_size, std::move(block));
   }
 }
