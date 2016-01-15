@@ -7,8 +7,16 @@
 
 bool RPCShuffleClient::FetchBlocks() {
   std::queue<msgpack::rpc::future> futures;
+  const int kMinBackoff = 1;
+  const int kMaxBackoff = 1000;
+  int backoff = kMinBackoff;
 
   while (!servers_.empty()) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(backoff));
+    if (backoff < kMaxBackoff) {
+      backoff *= 2;
+    }
+
     for (const auto server : servers_) {
       futures.push(sp_.get_session(server.first, server.second)
                        .call("GET", my_rank_));
@@ -32,6 +40,7 @@ bool RPCShuffleClient::FetchBlocks() {
             std::unique_ptr<char[]> block(new char[len]);
             result.copy(block.get(), len, header_end + 2);
             block_mgr_.PutBlock(my_rank_, len, std::move(block));
+            backoff = kMinBackoff;
             break;
         }
       } catch (msgpack::rpc::remote_error &e) {
@@ -39,7 +48,6 @@ bool RPCShuffleClient::FetchBlocks() {
       }
       servers_.push_back(s);
     }
-    sleep(1);
   }
 
   return true;
