@@ -33,13 +33,13 @@ void PairwiseShuffleClient::Start(int server_id, const std::string &server_addr,
     return;
   }
 
-  UnpackBlocks(server_id, rbuf.get(), len);
+  UnpackBlocks(rbuf.get(), len);
 }
 
-void PairwiseShuffleClient::PackBlocks(int server_id, msgpack::sbuffer &sbuf) {
+void PairwiseShuffleClient::PackBlocks(int server_rank, msgpack::sbuffer &sbuf) {
   long len = 0;
   while (true) {
-    auto block = block_mgr_.GetBlock(server_id, len);
+    auto block = block_mgr_.GetBlock(server_rank, len);
     if (len == -1) {
       break;
     }
@@ -47,7 +47,7 @@ void PairwiseShuffleClient::PackBlocks(int server_id, msgpack::sbuffer &sbuf) {
   }
 }
 
-void PairwiseShuffleClient::UnpackBlocks(int server_id, const char *buf, long len) {
+void PairwiseShuffleClient::UnpackBlocks(const char *buf, long len) {
   msgpack::unpacker upc;
   upc.reserve_buffer(len);
   memcpy(upc.buffer(), buf, len);
@@ -60,6 +60,6 @@ void PairwiseShuffleClient::UnpackBlocks(int server_id, const char *buf, long le
     auto block_size = received.length();
     std::unique_ptr<char[]> block(new char[block_size]);
     received.copy(block.get(), block_size);
-    block_mgr_.PutBlock(server_id, block_size, std::move(block));
+    block_mgr_.PutBlock(my_rank_, block_size, std::move(block));
   }
 }

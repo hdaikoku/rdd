@@ -196,7 +196,7 @@ rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
   int dest_id;
   ParseParams(req, dest_id);
 
-  PairwiseShuffleServer shuffle_server(*block_mgr_);
+  PairwiseShuffleServer shuffle_server(id_, *block_mgr_);
   shuffle_server.Start(dest_id, executors_[id_].GetDataPort());
 
   return rdd_rpc::Response::OK;
@@ -209,7 +209,7 @@ rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
   int dest_id;
   ParseParams(req, dest_id, server_addr);
 
-  PairwiseShuffleClient shuffle_client(*block_mgr_);
+  PairwiseShuffleClient shuffle_client(id_, *block_mgr_);
   shuffle_client.Start(dest_id, server_addr, executors_[dest_id].GetDataPort());
 
   return rdd_rpc::Response::OK;
