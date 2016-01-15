@@ -4,9 +4,7 @@
 
 #include "bi_gram_mapper.h"
 
-void BiGramMapper::Map(std::unordered_map<std::pair<std::string, std::string>,
-                                          std::vector<int>,
-                                          tbb::tbb_hash<std::pair<std::string, std::string>>> &kvs,
+void BiGramMapper::Map(std::unordered_map<std::string, std::vector<int>, tbb::tbb_hash<std::string>> &kvs,
                        const long long int &key,
                        const std::string &value) {
   size_t cur = 0, pos = 0;
@@ -21,7 +19,7 @@ void BiGramMapper::Map(std::unordered_map<std::pair<std::string, std::string>,
 
   while ((pos = value.find_first_of(" ", cur)) != std::string::npos) {
     word2 = value.substr(cur, pos - cur);
-    kvs[std::make_pair(word1, word2)].push_back(1);
+    kvs[word1 + " " + word2].push_back(1);
     cur = pos + 1;
     word1 = word2;
   }

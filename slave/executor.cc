@@ -107,7 +107,7 @@ rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
         for (int i = range.begin(); i < range.end(); i++) {
           // TODO dirty hack :)
           auto new_rdd = static_cast<KeyValueRDD<long long int, std::string> *>(rdds[i].get())
-              ->Map<std::pair<std::string, std::string>, int>(dl_mapper);
+              ->Map<std::string, int>(dl_mapper);
           new_rdd->PutBlocks(*block_mgr_);
           new_rdds.push_back(std::move(new_rdd));
         }
@@ -133,7 +133,7 @@ rdd_rpc::Response Executor::MapWithCombine(msgpack::rpc::request &req) {
         for (int i = range.begin(); i < range.end(); i++) {
           // TODO dirty hack :)
           auto new_rdd = static_cast<KeyValueRDD<long long int, std::string> *>(rdds[i].get())
-              ->Map<std::pair<std::string, std::string>, int>(dl_mapper);
+              ->Map<std::string, int>(dl_mapper);
           new_rdd->Combine(dl_combiner);
           new_rdd->PutBlocks(*block_mgr_);
           new_rdds.push_back(std::move(new_rdd));
@@ -175,7 +175,7 @@ rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
         for (int i = range.begin(); i < range.end(); i++) {
           // TODO dirty hack :)
           auto new_rdd = static_cast<KeyValueRDD<long long int, std::string> *>(rdds[i].get())
-              ->Map<std::pair<std::string, std::string>, int>(dl_mapper);
+              ->Map<std::string, int>(dl_mapper);
           new_rdd->Combine(dl_combiner);
           new_rdd->PutBlocks(*block_mgr_);
           new_rdds.push_back(std::move(new_rdd));
@@ -222,11 +222,11 @@ rdd_rpc::Response Executor::Reduce(msgpack::rpc::request &req) {
   std::string dl_filename;
   ParseParams(req, rdd_id, dl_filename, new_rdd_id);
 
-  auto kvs_rdd = static_cast<KeyValuesRDD<std::pair<std::string, std::string>, int> *>(rdds_[rdd_id][0].get());
+  auto kvs_rdd = static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id][0].get());
   kvs_rdd->GetBlocks(*block_mgr_, id_);
 
   // TODO dirty hack :)
-  rdds_[new_rdd_id].push_back(kvs_rdd->Reduce<std::pair<std::string, std::string>, int>(dl_filename));
+  rdds_[new_rdd_id].push_back(kvs_rdd->Reduce<std::string, int>(dl_filename));
 
   return rdd_rpc::Response::OK;
 }
