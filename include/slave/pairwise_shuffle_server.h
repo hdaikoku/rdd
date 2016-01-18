@@ -17,7 +17,7 @@ class PairwiseShuffleServer {
   BlockManager &block_mgr_;
   int my_rank_;
 
-  void PackBlocks(int client_rank, msgpack::sbuffer &sbuf);
+  void PackBlocks(int client_rank, msgpack::sbuffer &sbuf, std::vector<std::unique_ptr<char[]>> &refs);
   void UnpackBlocks(const char *buf, size_t len);
 };
 

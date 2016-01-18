@@ -32,7 +32,8 @@ void PairwiseShuffleServer::Start(int client_id, int port) {
   UnpackBlocks(rbuf.get(), len);
 
   msgpack::sbuffer sbuf;
-  PackBlocks(client_id, sbuf);
+  std::vector<std::unique_ptr<char[]>> refs;
+  PackBlocks(client_id, sbuf, refs);
 
   if (server.WriteWithHeader(sock_fd, sbuf.data(), sbuf.size()) < 0) {
     std::cerr << "write failed" << std::endl;
@@ -40,14 +41,17 @@ void PairwiseShuffleServer::Start(int client_id, int port) {
   }
 }
 
-void PairwiseShuffleServer::PackBlocks(int client_rank, msgpack::sbuffer &sbuf) {
+void PairwiseShuffleServer::PackBlocks(int client_rank,
+                                       msgpack::sbuffer &sbuf,
+                                       std::vector<std::unique_ptr<char[]>> &refs) {
   long len = 0;
   while (true) {
     auto block = block_mgr_.GetBlock(client_rank, len);
     if (len == -1) {
       break;
     }
-    msgpack::pack(&sbuf, std::string(block.get(), len));
+    msgpack::pack(&sbuf, msgpack::type::raw_ref(block.get(), len));
+    refs.push_back(std::move(block));
   }
 }
 
