@@ -1,9 +1,5 @@
 project(RDDSlave)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMP_FUNCTIONAL_STANDARD -DMP_MEMORY_STANDARD -DMP_UNORDERED_MAP_STANDARD")
-
-include_directories(../include/slave)
-
 set(SLAVE_SOURCE_FILES
         slave.cc
         ../include/slave_context.h
@@ -22,4 +18,4 @@ set(SLAVE_SOURCE_FILES
 
 add_executable(RDDSlave ${SLAVE_SOURCE_FILES})
 
-target_link_libraries(RDDSlave ${MSGPACK_LIBRARY} jubatus_mpio jubatus_msgpack-rpc dl tbb)
+target_link_libraries(RDDSlave msgpack jubatus_mpio jubatus_msgpack-rpc dl tbb)

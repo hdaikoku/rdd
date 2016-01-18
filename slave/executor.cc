@@ -4,13 +4,13 @@
 
 #include <sstream>
 #include <fstream>
-#include <slave/rpc_shuffle_server.h>
-#include <slave/rpc_shuffle_client.h>
-#include <slave/pairwise_shuffle_server.h>
-#include <slave/pairwise_shuffle_client.h>
-#include "executor.h"
-#include "key_value_rdd.h"
-#include "key_values_rdd.h"
+#include "slave/rpc_shuffle_server.h"
+#include "slave/rpc_shuffle_client.h"
+#include "slave/pairwise_shuffle_server.h"
+#include "slave/pairwise_shuffle_client.h"
+#include "slave/executor.h"
+#include "slave/key_value_rdd.h"
+#include "slave/key_values_rdd.h"
 
 void Executor::dispatch(msgpack::rpc::request req) {
   std::string method;

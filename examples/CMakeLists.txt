@@ -5,7 +5,6 @@ project(WordCount)
 project(BiGramMapper)
 project(BiGramReducer)
 project(BiGramCombiner)
-project(BiGram)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../lib)

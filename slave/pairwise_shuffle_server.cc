@@ -3,7 +3,7 @@
 //
 
 #include <iostream>
-#include "pairwise_shuffle_server.h"
+#include "slave/pairwise_shuffle_server.h"
 #include "socket/socket_server.h"
 
 

@@ -10,8 +10,6 @@
 #include "rdd_rpc.h"
 #include "slave_context.h"
 #include "rdd.h"
-#include "slave/shuffle_server.h"
-#include "slave/shuffle_client.h"
 
 class Executor: public msgpack::rpc::dispatcher {
 

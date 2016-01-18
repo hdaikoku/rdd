@@ -4,7 +4,7 @@
 
 #include <iostream>
 #include "socket/socket_client.h"
-#include "pairwise_shuffle_client.h"
+#include "slave/pairwise_shuffle_client.h"
 
 
 void PairwiseShuffleClient::Start(int server_id, const std::string &server_addr, int server_port) {

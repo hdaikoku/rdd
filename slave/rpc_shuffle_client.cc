@@ -3,7 +3,7 @@
 //
 
 #include <queue>
-#include "rpc_shuffle_client.h"
+#include "slave/rpc_shuffle_client.h"
 
 bool RPCShuffleClient::FetchBlocks() {
   std::queue<msgpack::rpc::future> futures;
