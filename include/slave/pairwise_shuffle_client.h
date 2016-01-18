@@ -18,7 +18,7 @@ class PairwiseShuffleClient {
   int my_rank_;
 
   void PackBlocks(int server_rank, msgpack::sbuffer &sbuf);
-  void UnpackBlocks(const char *buf, long len);
+  void UnpackBlocks(const char *buf, size_t len);
 };
 
 #endif //PROJECT_PAIRWISE_SHUFFLE_CLIENT_H

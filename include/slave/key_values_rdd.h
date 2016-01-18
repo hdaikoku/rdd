@@ -106,7 +106,7 @@ class KeyValuesRDD: public RDD {
       if (block_len == -1) {
         break;
       }
-      Unpack(block_len, block.get());
+      Unpack(block.get(), block_len);
     }
   }
 
@@ -131,16 +131,13 @@ class KeyValuesRDD: public RDD {
     }
   }
 
-  virtual void Unpack(long len, const char *buf) override {
-    msgpack::unpacker upc;
-    upc.reserve_buffer(len);
-    memcpy(upc.buffer(), buf, len);
-    upc.buffer_consumed(len);
-
-    msgpack::unpacked result;
-    while (upc.next(&result)) {
-      std::pair<K, std::vector<V>> received;
-      result.get().convert(&received);
+  virtual void Unpack(const char *buf, size_t len) override {
+    size_t offset = 0;
+    msgpack::unpacked unpacked;
+    std::pair<K, std::vector<V>> received;
+    while (offset != len) {
+      msgpack::unpack(&unpacked, buf, len, &offset);
+      unpacked.get().convert(&received);
       std::copy(received.second.begin(), received.second.end(),
                 std::back_inserter(key_values_[received.first]));
     }
