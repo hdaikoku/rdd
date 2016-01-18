@@ -24,11 +24,7 @@ class KeyValuesRDD: public RDD {
 
   KeyValuesRDD(const std::unordered_map<K, std::vector<V>, tbb::tbb_hash<K>> &key_values) : key_values_(key_values) { }
 
-  KeyValuesRDD(const tbb::concurrent_unordered_map<K, tbb::concurrent_vector<V>> &key_values) {
-    for (const auto &kv : key_values) {
-      std::copy(kv.second.begin(), kv.second.end(), std::back_inserter(key_values_[kv.first]));
-    }
-  }
+  KeyValuesRDD(std::unordered_map<K, std::vector<V>, tbb::tbb_hash<K>> &&key_values) : key_values_(key_values) { }
 
   bool Combine(const std::string &dl_filename) {
     void *handle = LoadLib(dl_filename);
@@ -53,7 +49,7 @@ class KeyValuesRDD: public RDD {
       key_values_[combined.first].push_back(combined.second);
     }
 
-    combiner.release();
+    combiner.reset(nullptr);
     dlclose(handle);
 
     return true;
@@ -83,7 +79,7 @@ class KeyValuesRDD: public RDD {
       kvs.insert(reducer->Reduce(kv.first, kv.second));
     });
 
-    reducer.release();
+    reducer.reset(nullptr);
     dlclose(handle);
 
     return std::unique_ptr<KeyValueRDD<NK, NV>>(new KeyValueRDD<NK, NV>(kvs));
