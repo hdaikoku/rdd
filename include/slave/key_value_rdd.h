@@ -23,9 +23,9 @@ class KeyValueRDD: public RDD {
 
   KeyValueRDD(const std::unordered_map<K, V, tbb::tbb_hash<K>> &key_values) : key_values_(key_values) { }
 
-  KeyValueRDD(const tbb::concurrent_unordered_map<K, V, tbb::tbb_hash<K>> &key_values) {
-    for (const auto &kv : key_values) {
-      key_values_.emplace(kv.first, kv.second);
+  KeyValueRDD(tbb::concurrent_unordered_map<K, V> &&key_values) {
+    for (auto &&kv : key_values) {
+      key_values_.insert(kv);
     }
   }
 

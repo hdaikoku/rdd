@@ -82,7 +82,7 @@ class KeyValuesRDD: public RDD {
     reducer.reset(nullptr);
     dlclose(handle);
 
-    return std::unique_ptr<KeyValueRDD<NK, NV>>(new KeyValueRDD<NK, NV>(kvs));
+    return std::unique_ptr<KeyValueRDD<NK, NV>>(new KeyValueRDD<NK, NV>(std::move(kvs)));
   }
 
   virtual void PutBlocks(BlockManager &block_mgr) override {
