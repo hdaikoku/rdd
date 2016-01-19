@@ -7,10 +7,6 @@
 #include "master/rdd_context.h"
 
 std::unique_ptr<KeyValueRDDStub> KeyValuesRDDStub::Reduce(const std::string &dl_filename) {
-  if (!shuffled_) {
-    Shuffle();
-  }
-
   std::vector<msgpack::rpc::future> fs;
   int new_rdd_id = rc_->GetNewRddId();
 

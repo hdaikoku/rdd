@@ -21,7 +21,10 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
     }
   }
 
-  return std::unique_ptr<KeyValuesRDDStub>(new KeyValuesRDDStub(rc_, new_rdd_id, owners_, false));
+  std::unique_ptr<KeyValuesRDDStub> mapped(new KeyValuesRDDStub(rc_, new_rdd_id, owners_));
+  mapped->Shuffle();
+
+  return std::move(mapped);
 }
 
 std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_mapper,
@@ -48,7 +51,13 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
     }
   }
 
-  return std::unique_ptr<KeyValuesRDDStub>(new KeyValuesRDDStub(rc_, new_rdd_id, owners_, overlap));
+  std::unique_ptr<KeyValuesRDDStub> mapped(new KeyValuesRDDStub(rc_, new_rdd_id, owners_));
+
+  if (!overlap) {
+    mapped->Shuffle();
+  }
+
+  return std::move(mapped);
 }
 
 
