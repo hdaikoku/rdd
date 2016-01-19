@@ -9,6 +9,7 @@
 #include <tbb/tbb.h>
 #include <unordered_map>
 #include <vector>
+#include <sparsehash/dense_hash_map>
 
 template <typename NK, typename NV, typename K, typename V>
 class Mapper {
@@ -17,6 +18,12 @@ class Mapper {
   virtual ~Mapper() { }
 
   virtual void Map(std::unordered_map<NK, std::vector<NV>, tbb::tbb_hash<NK>> &kvs,
+                   const K &key, const V &value) = 0;
+
+  virtual void Map(std::unordered_map<NK, std::vector<NV>> &kvs,
+                   const K &key, const V &value) = 0;
+
+  virtual void Map(google::dense_hash_map<NK, std::vector<NV>> &kvs,
                    const K &key, const V &value) = 0;
 
 };

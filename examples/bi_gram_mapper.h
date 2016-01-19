@@ -16,6 +16,14 @@ class BiGramMapper:
                    const long long int &key,
                    const std::string &value) override;
 
+  virtual void
+      Map(std::unordered_map<std::string, std::vector<int>> &kvs, const long long int &key, const std::string &value)
+      override;
+
+  virtual void Map
+      (google::dense_hash_map<std::string, std::vector<int>> &kvs, const long long int &key, const std::string &value)
+      override;
+
 };
 
 extern "C" std::unique_ptr<Mapper<std::string, int, long long int, std::string>> Create() {

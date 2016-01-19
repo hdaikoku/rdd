@@ -22,9 +22,19 @@ template<typename K, typename V>
 class KeyValuesRDD: public RDD {
  public:
 
-  KeyValuesRDD(const std::unordered_map<K, std::vector<V>, tbb::tbb_hash<K>> &key_values) : key_values_(key_values) { }
-
   KeyValuesRDD(std::unordered_map<K, std::vector<V>, tbb::tbb_hash<K>> &&key_values) : key_values_(key_values) { }
+
+  KeyValuesRDD(std::unordered_map<K, std::vector<V>> &&key_values) {
+    for (const auto &kv : key_values) {
+      key_values_.insert(std::move(kv));
+    }
+  }
+
+  KeyValuesRDD(google::dense_hash_map<K, std::vector<V>> &&key_values) {
+    for (const auto &kv : key_values) {
+      key_values_.insert(std::move(kv));
+    }
+  }
 
   bool Combine(const std::string &dl_filename) {
     void *handle = LoadLib(dl_filename);
