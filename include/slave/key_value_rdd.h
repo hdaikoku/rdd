@@ -83,7 +83,7 @@ class KeyValueRDD: public RDD {
   }
 
   virtual void Pack(std::vector<msgpack::sbuffer> &buffers) const override {}
-  virtual void Unpack(const char *buf, size_t len) override {}
+  virtual void Unpack(const char *buf, size_t len) override { }
 
   virtual void PutBlocks(BlockManager &block_mgr) override {}
   virtual void GetBlocks(BlockManager &block_mgr, int my_rank) override {}
