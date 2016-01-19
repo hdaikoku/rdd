@@ -75,15 +75,10 @@ class KeyValueRDD: public RDD {
     //std::unordered_map<NK, std::vector<NV>> kvs;
     google::dense_hash_map<NK, std::vector<NV>> kvs;
     kvs.set_empty_key("");
-    auto beg = std::chrono::steady_clock::now();
+
     for (const auto &kv : key_values_) {
       mapper->Map(kvs, kv.first, kv.second);
     }
-    auto end = std::chrono::steady_clock::now();
-
-    std::cout << "MAP: "
-        << std::chrono::duration_cast<std::chrono::milliseconds>(end - beg).count()
-        << std::endl;
 
     mapper.reset(nullptr);
     dlclose(handle);
