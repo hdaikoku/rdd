@@ -4,13 +4,13 @@
 
 #include <sstream>
 #include <fstream>
-#include <slave/rpc_shuffle_server.h>
-#include <slave/rpc_shuffle_client.h>
-#include <slave/pairwise_shuffle_server.h>
-#include <slave/pairwise_shuffle_client.h>
-#include "executor.h"
-#include "key_value_rdd.h"
-#include "key_values_rdd.h"
+#include "slave/rpc_shuffle_server.h"
+#include "slave/rpc_shuffle_client.h"
+#include "slave/pairwise_shuffle_server.h"
+#include "slave/pairwise_shuffle_client.h"
+#include "slave/executor.h"
+#include "slave/key_value_rdd.h"
+#include "slave/key_values_rdd.h"
 
 void Executor::dispatch(msgpack::rpc::request req) {
   std::string method;
@@ -107,7 +107,7 @@ rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
         for (int i = range.begin(); i < range.end(); i++) {
           // TODO dirty hack :)
           auto new_rdd = static_cast<KeyValueRDD<long long int, std::string> *>(rdds[i].get())
-              ->Map<std::pair<std::string, std::string>, int>(dl_mapper);
+              ->Map<std::string, int>(dl_mapper);
           new_rdd->PutBlocks(*block_mgr_);
           new_rdds.push_back(std::move(new_rdd));
         }
@@ -133,7 +133,7 @@ rdd_rpc::Response Executor::MapWithCombine(msgpack::rpc::request &req) {
         for (int i = range.begin(); i < range.end(); i++) {
           // TODO dirty hack :)
           auto new_rdd = static_cast<KeyValueRDD<long long int, std::string> *>(rdds[i].get())
-              ->Map<std::pair<std::string, std::string>, int>(dl_mapper);
+              ->Map<std::string, int>(dl_mapper);
           new_rdd->Combine(dl_combiner);
           new_rdd->PutBlocks(*block_mgr_);
           new_rdds.push_back(std::move(new_rdd));
@@ -175,7 +175,7 @@ rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
         for (int i = range.begin(); i < range.end(); i++) {
           // TODO dirty hack :)
           auto new_rdd = static_cast<KeyValueRDD<long long int, std::string> *>(rdds[i].get())
-              ->Map<std::pair<std::string, std::string>, int>(dl_mapper);
+              ->Map<std::string, int>(dl_mapper);
           new_rdd->Combine(dl_combiner);
           new_rdd->PutBlocks(*block_mgr_);
           new_rdds.push_back(std::move(new_rdd));
@@ -196,7 +196,7 @@ rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
   int dest_id;
   ParseParams(req, dest_id);
 
-  PairwiseShuffleServer shuffle_server(*block_mgr_);
+  PairwiseShuffleServer shuffle_server(id_, *block_mgr_);
   shuffle_server.Start(dest_id, executors_[id_].GetDataPort());
 
   return rdd_rpc::Response::OK;
@@ -209,7 +209,7 @@ rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
   int dest_id;
   ParseParams(req, dest_id, server_addr);
 
-  PairwiseShuffleClient shuffle_client(*block_mgr_);
+  PairwiseShuffleClient shuffle_client(id_, *block_mgr_);
   shuffle_client.Start(dest_id, server_addr, executors_[dest_id].GetDataPort());
 
   return rdd_rpc::Response::OK;
@@ -222,11 +222,11 @@ rdd_rpc::Response Executor::Reduce(msgpack::rpc::request &req) {
   std::string dl_filename;
   ParseParams(req, rdd_id, dl_filename, new_rdd_id);
 
-  auto kvs_rdd = static_cast<KeyValuesRDD<std::pair<std::string, std::string>, int> *>(rdds_[rdd_id][0].get());
+  auto kvs_rdd = static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id][0].get());
   kvs_rdd->GetBlocks(*block_mgr_, id_);
 
   // TODO dirty hack :)
-  rdds_[new_rdd_id].push_back(kvs_rdd->Reduce<std::pair<std::string, std::string>, int>(dl_filename));
+  rdds_[new_rdd_id].push_back(kvs_rdd->Reduce<std::string, int>(dl_filename));
 
   return rdd_rpc::Response::OK;
 }

@@ -4,7 +4,7 @@
 
 #include <iostream>
 #include "socket/socket_client.h"
-#include "pairwise_shuffle_client.h"
+#include "slave/pairwise_shuffle_client.h"
 
 
 void PairwiseShuffleClient::Start(int server_id, const std::string &server_addr, int server_port) {
@@ -18,7 +18,8 @@ void PairwiseShuffleClient::Start(int server_id, const std::string &server_addr,
   }
 
   msgpack::sbuffer sbuf;
-  PackBlocks(server_id, sbuf);
+  std::vector<std::unique_ptr<char[]>> refs;
+  PackBlocks(server_id, sbuf, refs);
 
   if (client.WriteWithHeader(sock_fd, sbuf.data(), sbuf.size()) < 0) {
     std::cerr << "write failed" << std::endl;
@@ -33,32 +34,31 @@ void PairwiseShuffleClient::Start(int server_id, const std::string &server_addr,
     return;
   }
 
-  UnpackBlocks(server_id, rbuf.get(), len);
+  UnpackBlocks(rbuf.get(), len);
 }
 
-void PairwiseShuffleClient::PackBlocks(int server_id, msgpack::sbuffer &sbuf) {
+void PairwiseShuffleClient::PackBlocks(int server_rank,
+                                       msgpack::sbuffer &sbuf,
+                                       std::vector<std::unique_ptr<char[]>> &refs) {
   long len = 0;
   while (true) {
-    auto block = block_mgr_.GetBlock(server_id, len);
+    auto block = block_mgr_.GetBlock(server_rank, len);
     if (len == -1) {
       break;
     }
-    msgpack::pack(&sbuf, std::string(block.get(), len));
+    msgpack::pack(&sbuf, msgpack::type::raw_ref(block.get(), len));
+    refs.push_back(std::move(block));
   }
 }
 
-void PairwiseShuffleClient::UnpackBlocks(int server_id, const char *buf, long len) {
-  msgpack::unpacker upc;
-  upc.reserve_buffer(len);
-  memcpy(upc.buffer(), buf, len);
-  upc.buffer_consumed(len);
-
-  msgpack::unpacked result;
-  while (upc.next(&result)) {
-    std::string received;
-    result.get().convert(&received);
-    std::unique_ptr<char[]> block(new char[len]);
-    received.copy(block.get(), len);
-    block_mgr_.PutBlock(server_id, received.length(), std::move(block));
+void PairwiseShuffleClient::UnpackBlocks(const char *buf, size_t len) {
+  size_t offset = 0;
+  msgpack::unpacked unpacked;
+  while (offset != len) {
+    msgpack::unpack(&unpacked, buf, len, &offset);
+    auto raw = unpacked.get().via.raw;
+    std::unique_ptr<char[]> block(new char[raw.size]);
+    memcpy(block.get(), raw.ptr, raw.size);
+    block_mgr_.PutBlock(my_rank_, raw.size, std::move(block));
   }
 }

@@ -9,15 +9,16 @@
 
 class PairwiseShuffleServer {
  public:
-  PairwiseShuffleServer(BlockManager &block_mgr) : block_mgr_(block_mgr) { }
+  PairwiseShuffleServer(int my_rank, BlockManager &block_mgr) : my_rank_(my_rank), block_mgr_(block_mgr) { }
 
   void Start(int client_id, int port);
 
  private:
   BlockManager &block_mgr_;
+  int my_rank_;
 
-  void PackBlocks(int client_id, msgpack::sbuffer &sbuf);
-  void UnpackBlocks(int client_id, const char *buf, long len);
+  void PackBlocks(int client_rank, msgpack::sbuffer &sbuf, std::vector<std::unique_ptr<char[]>> &refs);
+  void UnpackBlocks(const char *buf, size_t len);
 };
 
 #endif //PROJECT_PAIRWISE_SHUFFLE_SERVER_H

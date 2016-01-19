@@ -2,7 +2,7 @@
 // Created by Harunobu Daikoku on 2016/01/06.
 //
 
-#include "rpc_shuffle_server.h"
+#include "slave/rpc_shuffle_server.h"
 
 void RPCShuffleServer::dispatch(msgpack::rpc::request req) {
   try {

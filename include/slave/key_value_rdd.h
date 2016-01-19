@@ -23,18 +23,14 @@ class KeyValueRDD: public RDD {
 
   KeyValueRDD(const std::unordered_map<K, V, tbb::tbb_hash<K>> &key_values) : key_values_(key_values) { }
 
-  KeyValueRDD(const tbb::concurrent_unordered_map<K, V, tbb::tbb_hash<K>> &key_values) {
-    for (const auto &kv : key_values) {
-      key_values_[kv.first] = kv.second;
+  KeyValueRDD(tbb::concurrent_unordered_map<K, V> &&key_values) {
+    for (auto &&kv : key_values) {
+      key_values_.insert(kv);
     }
   }
 
   KeyValueRDD(const std::string &filename, const long long int offset, const int size)
       : filename_(filename), chunk_offset_(offset), chunk_size_(size) {};
-
-  void Insert(const K &key, const V &value) {
-    key_values_.insert(std::make_pair(key, value));
-  }
 
   void Materialize() {
     std::ifstream ifs(filename_);
@@ -80,14 +76,14 @@ class KeyValueRDD: public RDD {
       mapper->Map(kvs, kv.first, kv.second);
     }
 
-    mapper.release();
+    mapper.reset(nullptr);
     dlclose(handle);
 
-    return std::unique_ptr<KeyValuesRDD<NK, NV>>(new KeyValuesRDD<NK, NV>(kvs));
+    return std::unique_ptr<KeyValuesRDD<NK, NV>>(new KeyValuesRDD<NK, NV>(std::move(kvs)));
   }
 
   virtual void Pack(std::vector<msgpack::sbuffer> &buffers) const override {}
-  virtual void Unpack(long len, const char *buf) override {}
+  virtual void Unpack(const char *buf, size_t len) override {}
 
   virtual void PutBlocks(BlockManager &block_mgr) override {}
   virtual void GetBlocks(BlockManager &block_mgr, int my_rank) override {}

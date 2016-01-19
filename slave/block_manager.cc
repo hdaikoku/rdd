@@ -3,7 +3,7 @@
 //
 
 #include <iostream>
-#include "block_manager.h"
+#include "slave/block_manager.h"
 
 std::unique_ptr<char[]> BlockManager::GetBlock(int buffer_id, long &len) {
   Block block(0, std::unique_ptr<char[]>(nullptr));

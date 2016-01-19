@@ -22,7 +22,7 @@ class RDD {
   void *LoadFunc(void *handle, const std::string &func_name);
 
   virtual void Pack(std::vector<msgpack::sbuffer> &buffers) const = 0;
-  virtual void Unpack(long len, const char *buf) = 0;
+  virtual void Unpack(const char *buf, size_t len) = 0;
 
   virtual void PutBlocks(BlockManager &block_mgr) = 0;
   virtual void GetBlocks(BlockManager &block_mgr, int my_rank) = 0;

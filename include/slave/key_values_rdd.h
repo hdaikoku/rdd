@@ -24,11 +24,7 @@ class KeyValuesRDD: public RDD {
 
   KeyValuesRDD(const std::unordered_map<K, std::vector<V>, tbb::tbb_hash<K>> &key_values) : key_values_(key_values) { }
 
-  KeyValuesRDD(const tbb::concurrent_unordered_map<K, tbb::concurrent_vector<V>> &key_values) {
-    for (const auto &kv : key_values) {
-      std::copy(kv.second.begin(), kv.second.end(), std::back_inserter(key_values_[kv.first]));
-    }
-  }
+  KeyValuesRDD(std::unordered_map<K, std::vector<V>, tbb::tbb_hash<K>> &&key_values) : key_values_(key_values) { }
 
   bool Combine(const std::string &dl_filename) {
     void *handle = LoadLib(dl_filename);
@@ -53,7 +49,7 @@ class KeyValuesRDD: public RDD {
       key_values_[combined.first].push_back(combined.second);
     }
 
-    combiner.release();
+    combiner.reset(nullptr);
     dlclose(handle);
 
     return true;
@@ -83,10 +79,10 @@ class KeyValuesRDD: public RDD {
       kvs.insert(reducer->Reduce(kv.first, kv.second));
     });
 
-    reducer.release();
+    reducer.reset(nullptr);
     dlclose(handle);
 
-    return std::unique_ptr<KeyValueRDD<NK, NV>>(new KeyValueRDD<NK, NV>(kvs));
+    return std::unique_ptr<KeyValueRDD<NK, NV>>(new KeyValueRDD<NK, NV>(std::move(kvs)));
   }
 
   virtual void PutBlocks(BlockManager &block_mgr) override {
@@ -106,7 +102,7 @@ class KeyValuesRDD: public RDD {
       if (block_len == -1) {
         break;
       }
-      Unpack(block_len, block.get());
+      Unpack(block.get(), block_len);
     }
   }
 
@@ -131,16 +127,13 @@ class KeyValuesRDD: public RDD {
     }
   }
 
-  virtual void Unpack(long len, const char *buf) override {
-    msgpack::unpacker upc;
-    upc.reserve_buffer(len);
-    memcpy(upc.buffer(), buf, len);
-    upc.buffer_consumed(len);
-
-    msgpack::unpacked result;
-    while (upc.next(&result)) {
-      std::pair<K, std::vector<V>> received;
-      result.get().convert(&received);
+  virtual void Unpack(const char *buf, size_t len) override {
+    size_t offset = 0;
+    msgpack::unpacked unpacked;
+    std::pair<K, std::vector<V>> received;
+    while (offset != len) {
+      msgpack::unpack(&unpacked, buf, len, &offset);
+      unpacked.get().convert(&received);
       std::copy(received.second.begin(), received.second.end(),
                 std::back_inserter(key_values_[received.first]));
     }
