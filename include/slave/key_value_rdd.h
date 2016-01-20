@@ -41,11 +41,12 @@ class KeyValueRDD: public RDD {
     buf[chunk_size_] = '\0';
     ifs.close();
 
-    size_t cur = 0, pos = 0;
-    std::string text(buf.get());
-    while ((pos = text.find_first_of("\n", cur)) != std::string::npos) {
-      key_values_.insert(std::make_pair(chunk_offset_ + cur, std::string(text, cur, pos - cur)));
-      cur = pos + 1;
+    auto offset = chunk_offset_;
+    auto line = strtok(buf.get(), "\n");
+    while (line != nullptr) {
+      key_values_.emplace(std::make_pair(offset, std::string(line)));
+      offset += (strlen(line) + 1);
+      line = strtok(nullptr, "\n");
     }
   }
 
