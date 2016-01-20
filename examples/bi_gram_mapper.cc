@@ -9,8 +9,12 @@ void BiGramMapper::Map(std::unordered_map<std::string, std::vector<int>, tbb::tb
                        const std::string &value) {
   size_t cur = 0, p1, p2 = 0;
   p1 = value.find_first_of(' ', cur);
-  while (p2 != value.npos) {
+  while (true) {
     p2 = value.find_first_of(' ', p1 + 1);
+    if (p2 == value.npos) {
+      kvs[value.substr(cur, value.size() - cur)].emplace_back(1);
+      break;
+    }
     kvs[value.substr(cur, p2 - cur)].emplace_back(1);
     cur = p1 + 1;
     p1 = p2;
@@ -22,8 +26,12 @@ void BiGramMapper::Map(std::unordered_map<std::string, std::vector<int>> &kvs,
                        const std::string &value) {
   size_t cur = 0, p1, p2 = 0;
   p1 = value.find_first_of(' ', cur);
-  while (p2 != value.npos) {
+  while (true) {
     p2 = value.find_first_of(' ', p1 + 1);
+    if (p2 == value.npos) {
+      kvs[value.substr(cur, value.size() - cur)].emplace_back(1);
+      break;
+    }
     kvs[value.substr(cur, p2 - cur)].emplace_back(1);
     cur = p1 + 1;
     p1 = p2;
@@ -35,8 +43,12 @@ void BiGramMapper::Map(google::dense_hash_map<std::string, std::vector<int>> &kv
                        const std::string &value) {
   size_t cur = 0, p1, p2 = 0;
   p1 = value.find_first_of(' ', cur);
-  while (p2 != value.npos) {
+  while (true) {
     p2 = value.find_first_of(' ', p1 + 1);
+    if (p2 == value.npos) {
+      kvs[value.substr(cur, value.size() - cur)].emplace_back(1);
+      break;
+    }
     kvs[value.substr(cur, p2 - cur)].emplace_back(1);
     cur = p1 + 1;
     p1 = p2;
