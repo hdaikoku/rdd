@@ -9,35 +9,32 @@
 void WordCountMapper::Map(std::unordered_map<std::string, std::vector<int>, tbb::tbb_hash<std::string>> &kvs,
                           const long long int &key,
                           const std::string &value) {
-  size_t cur = 0;
-  auto pos = value.find_first_of(' ', cur);
-  while (pos != value.npos) {
+  size_t cur = 0, pos;
+  while ((pos = value.find_first_of(' ', cur)) != value.npos) {
     kvs[value.substr(cur, pos - cur)].emplace_back(1);
     cur = pos + 1;
-    pos = value.find_first_of(' ', cur);
   }
+  kvs[value.substr(cur, value.size() - cur)].emplace_back(1);
 }
 
 void WordCountMapper::Map(std::unordered_map<std::string, std::vector<int>> &kvs,
                           const long long int &key,
                           const std::string &value) {
-  size_t cur = 0;
-  auto pos = value.find_first_of(' ', cur);
-  while (pos != value.npos) {
+  size_t cur = 0, pos;
+  while ((pos = value.find_first_of(' ', cur)) != value.npos) {
     kvs[value.substr(cur, pos - cur)].emplace_back(1);
     cur = pos + 1;
-    pos = value.find_first_of(' ', cur);
   }
+  kvs[value.substr(cur, value.size() - cur)].emplace_back(1);
 }
 
 void WordCountMapper::Map(google::dense_hash_map<std::string, std::vector<int>> &kvs,
                           const long long int &key,
                           const std::string &value) {
-  size_t cur = 0;
-  auto pos = value.find_first_of(' ', cur);
-  while (pos != value.npos) {
+  size_t cur = 0, pos;
+  while ((pos = value.find_first_of(' ', cur)) != value.npos) {
     kvs[value.substr(cur, pos - cur)].emplace_back(1);
     cur = pos + 1;
-    pos = value.find_first_of(' ', cur);
   }
+  kvs[value.substr(cur, value.size() - cur)].emplace_back(1);
 }
