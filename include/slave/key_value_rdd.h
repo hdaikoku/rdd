@@ -41,12 +41,14 @@ class KeyValueRDD: public RDD {
     buf[chunk_size_] = '\0';
     ifs.close();
 
+    char *save_ptr;
     auto offset = chunk_offset_;
-    auto line = strtok(buf.get(), "\n");
+    auto line = strtok_r(buf.get(), "\n", &save_ptr);
     while (line != nullptr) {
-      key_values_.emplace(std::make_pair(offset, std::string(line)));
-      offset += (strlen(line) + 1);
-      line = strtok(nullptr, "\n");
+      auto len = std::char_traits<char>::length(line);
+      key_values_.emplace(std::make_pair(offset, std::string(line, len)));
+      offset += (len + 1);
+      line = strtok_r(nullptr, "\n", &save_ptr);
     }
   }
 
@@ -73,9 +75,9 @@ class KeyValueRDD: public RDD {
     auto mapper = create_mapper();
 
     //std::unordered_map<NK, std::vector<NV>, tbb::tbb_hash<NK>> kvs;
-    //std::unordered_map<NK, std::vector<NV>> kvs;
-    google::dense_hash_map<NK, std::vector<NV>> kvs;
-    kvs.set_empty_key("");
+    std::unordered_map<NK, std::vector<NV>> kvs;
+    //google::dense_hash_map<NK, std::vector<NV>> kvs;
+    //kvs.set_empty_key("");
 
     for (const auto &kv : key_values_) {
       mapper->Map(kvs, kv.first, kv.second);
