@@ -83,11 +83,11 @@ class KeyValuesRDD: public RDD {
 
     auto reducer = create_reducer();
 
-    tbb::concurrent_unordered_map<NK, NV, tbb::tbb_hash<NK>> kvs;
+    std::unordered_map<K, V, tbb::tbb_hash<K>> kvs;
 
-    tbb::parallel_for_each(key_values_, [&kvs, &reducer](const std::pair<K, std::vector<V>> &kv){
-      kvs.insert(reducer->Reduce(kv.first, kv.second));
-    });
+    for (const auto &kv : key_values_) {
+      kvs.emplace(reducer->Reduce(kv.first, kv.second));
+    }
 
     reducer.reset(nullptr);
     dlclose(handle);

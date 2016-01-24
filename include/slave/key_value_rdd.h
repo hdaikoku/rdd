@@ -75,9 +75,9 @@ class KeyValueRDD: public RDD {
     auto mapper = create_mapper();
 
     //std::unordered_map<NK, std::vector<NV>, tbb::tbb_hash<NK>> kvs;
-    std::unordered_map<NK, std::vector<NV>> kvs;
-    //google::dense_hash_map<NK, std::vector<NV>> kvs;
-    //kvs.set_empty_key("");
+    //std::unordered_map<NK, std::vector<NV>> kvs;
+    google::dense_hash_map<NK, std::vector<NV>> kvs;
+    kvs.set_empty_key("");
 
     for (const auto &kv : key_values_) {
       mapper->Map(kvs, kv.first, kv.second);
