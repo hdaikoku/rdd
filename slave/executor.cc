@@ -255,7 +255,10 @@ rdd_rpc::Response Executor::Print(msgpack::rpc::request &req) {
   int rdd_id;
   ParseParams(req, rdd_id);
 
-  rdds_[rdd_id][0]->Print();
+  auto &rdds = rdds_[rdd_id];
+  for (const auto &rdd : rdds) {
+    rdd->Print();
+  }
 
   return rdd_rpc::Response::OK;
 }
