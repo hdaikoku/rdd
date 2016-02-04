@@ -104,14 +104,6 @@ std::unique_ptr<char[]> SocketCommon::ReadWithHeader(int sock_fd, size_t &len) c
 bool SocketCommon::SetSockOpt() {
   int val;
 
-  val = (1 << 19);
-  if (setsockopt(sock_fd_, SOL_SOCKET, SO_SNDBUF, (void *) &val, sizeof(int)) != 0) {
-    return false;
-  }
-  if (setsockopt(sock_fd_, SOL_SOCKET, SO_RCVBUF, (void *) &val, sizeof(int)) != 0) {
-    return false;
-  }
-
   val = 1;
   if (setsockopt(sock_fd_, IPPROTO_TCP, TCP_NODELAY, (void *) &val, sizeof(val)) != 0) {
     return false;

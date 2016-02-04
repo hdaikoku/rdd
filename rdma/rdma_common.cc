@@ -103,19 +103,15 @@ std::unique_ptr<char[]> RDMACommon::ReadWithHeader(int sock_fd, size_t &len) con
 bool RDMACommon::SetSockOpt() {
   int val;
 
-  val = (1 << 19);
-  if (rsetsockopt(sock_fd_, SOL_SOCKET, SO_SNDBUF, (void *) &val, sizeof(int)) != 0) {
-    return false;
-  }
-  if (rsetsockopt(sock_fd_, SOL_SOCKET, SO_RCVBUF, (void *) &val, sizeof(int)) != 0) {
-    return false;
-  }
-
   val = 1;
   if (rsetsockopt(sock_fd_, IPPROTO_TCP, TCP_NODELAY, (void *) &val, sizeof(val)) != 0) {
     return false;
   }
-//  rsetsockopt(sock_fd_, SOL_RDMA, RDMA_IOMAPSIZE, (void *) &val, sizeof val);
+  // optimize for bandwidth
+  val = 0;
+  if (rsetsockopt(sock_fd_, SOL_RDMA, RDMA_INLINE, &val, sizeof val) != 0) {
+    return false;
+  }
 
   return true;
 }
