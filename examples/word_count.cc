@@ -4,7 +4,6 @@
 
 #include <chrono>
 #include <iostream>
-#include <jubatus/msgpack/rpc/session_pool.h>
 #include "master/rdd_context.h"
 
 using namespace std;

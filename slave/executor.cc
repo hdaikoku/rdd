@@ -79,14 +79,14 @@ rdd_rpc::Response Executor::DistributeText(msgpack::rpc::request &req) {
 
   int rdd_id;
   std::string filename;
-  std::vector<std::pair<long long int, int>> indices;
+  std::vector<std::pair<uint64_t, int>> indices;
 
   ParseParams(req, rdd_id, filename, indices);
 
   for (const auto &index : indices) {
     rdds_[rdd_id].push_back(
-        std::unique_ptr<KeyValueRDD<long long int, std::string>>
-            (new KeyValueRDD<long long int, std::string>(filename, index.first, index.second)));
+        std::unique_ptr<KeyValueRDD<uint64_t, std::string>>
+            (new KeyValueRDD<uint64_t, std::string>(filename, index.first, index.second)));
   }
 
   return rdd_rpc::Response::OK;
@@ -106,7 +106,7 @@ rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
       [&](tbb::blocked_range<int> &range) {
         for (int i = range.begin(); i < range.end(); i++) {
           // TODO dirty hack :)
-          auto new_rdd = static_cast<KeyValueRDD<long long int, std::string> *>(rdds[i].get())
+          auto new_rdd = static_cast<KeyValueRDD<uint64_t, std::string> *>(rdds[i].get())
               ->Map<std::string, int>(dl_mapper);
           new_rdd->PutBlocks(*block_mgr_);
           new_rdds.push_back(std::move(new_rdd));
@@ -132,7 +132,7 @@ rdd_rpc::Response Executor::MapWithCombine(msgpack::rpc::request &req) {
       [&](tbb::blocked_range<int> &range) {
         for (int i = range.begin(); i < range.end(); i++) {
           // TODO dirty hack :)
-          auto new_rdd = static_cast<KeyValueRDD<long long int, std::string> *>(rdds[i].get())
+          auto new_rdd = static_cast<KeyValueRDD<uint64_t, std::string> *>(rdds[i].get())
               ->Map<std::string, int>(dl_mapper);
           new_rdd->Combine(dl_combiner);
           new_rdd->PutBlocks(*block_mgr_);
@@ -174,7 +174,7 @@ rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
       [&](tbb::blocked_range<int> &range) {
         for (int i = range.begin(); i < range.end(); i++) {
           // TODO dirty hack :)
-          auto new_rdd = static_cast<KeyValueRDD<long long int, std::string> *>(rdds[i].get())
+          auto new_rdd = static_cast<KeyValueRDD<uint64_t, std::string> *>(rdds[i].get())
               ->Map<std::string, int>(dl_mapper);
           new_rdd->Combine(dl_combiner);
           new_rdd->PutBlocks(*block_mgr_);

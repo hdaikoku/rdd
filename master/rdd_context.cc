@@ -43,18 +43,18 @@ std::unique_ptr<KeyValueRDDStub> RDDContext::TextFile(const std::string &filenam
   std::ifstream ifs(filename);
 
   std::vector<msgpack::rpc::future> fs;
-  std::unordered_map<int, std::vector<std::pair<long long int, int>>> index;
+  std::unordered_map<int, std::vector<std::pair<uint64_t, int>>> index;
   std::unordered_set<int> owners;
   int owner;
   int rdd_id = GetNewRddId();
 
-  long long int filesize = ifs.seekg(0, ifs.end).tellg();
+  uint64_t filesize = ifs.seekg(0, ifs.end).tellg();
   ifs.seekg(0, ifs.beg);
 
   while (!ifs.eof()) {
     owner = next_dst_id_++ % n_slaves_;
 
-    long long int offset = ifs.tellg();
+    uint64_t offset = ifs.tellg();
 
     if ((filesize - offset) < default_chunk_size_) {
       if (filesize > offset) {
@@ -68,7 +68,7 @@ std::unique_ptr<KeyValueRDDStub> RDDContext::TextFile(const std::string &filenam
     if (!ifs.eof()) {
       ifs.ignore(default_chunk_size_, '\n');
     }
-    long long int end = ifs.tellg();
+    uint64_t end = ifs.tellg();
 
     index[owner].push_back(std::make_pair(offset, (end - offset)));
   }
