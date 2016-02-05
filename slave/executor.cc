@@ -222,29 +222,11 @@ rdd_rpc::Response Executor::Reduce(msgpack::rpc::request &req) {
   std::string dl_filename;
   ParseParams(req, rdd_id, dl_filename, new_rdd_id);
 
-  auto &rdds = rdds_[rdd_id];
-  auto &new_rdds = rdds_[new_rdd_id];
-  tbb::parallel_for(
-      tbb::blocked_range<int>(0, rdds.size(), 1),
-      [&](tbb::blocked_range<int> &range) {
-        for (int i = range.begin(); i < range.end(); i++) {
-          // TODO dirty hack :)
-          static_cast<KeyValuesRDD<std::string, int> *>(rdds[i].get())
-              ->GetBlocks(*block_mgr_, id_);
-        }
-      }
-  );
+  auto kvs_rdd = static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id][0].get());
+  kvs_rdd->GetBlocks(*block_mgr_, id_);
 
-  tbb::parallel_for(
-      tbb::blocked_range<int>(0, rdds.size(), 1),
-      [&](tbb::blocked_range<int> &range) {
-        for (int i = range.begin(); i < range.end(); i++) {
-          // TODO dirty hack :)
-          new_rdds.push_back(static_cast<KeyValuesRDD<std::string, int> *>(rdds[i].get())
-                                 ->Reduce<std::string, int>(dl_filename));
-        }
-      }
-  );
+  // TODO dirty hack :)
+  rdds_[new_rdd_id].push_back(kvs_rdd->Reduce<std::string, int>(dl_filename));
 
   return rdd_rpc::Response::OK;
 }
