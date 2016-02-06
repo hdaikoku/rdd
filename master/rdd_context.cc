@@ -51,6 +51,9 @@ std::unique_ptr<KeyValueRDDStub> RDDContext::TextFile(const std::string &filenam
   uint64_t filesize = ifs.seekg(0, ifs.end).tellg();
   ifs.seekg(0, ifs.beg);
 
+  std::cout << "file_size: " << filesize << std::endl;
+  uint64_t count = 0;
+
   while (!ifs.eof()) {
     owner = next_dst_id_++ % n_slaves_;
 
@@ -59,6 +62,7 @@ std::unique_ptr<KeyValueRDDStub> RDDContext::TextFile(const std::string &filenam
     if ((filesize - offset) < default_chunk_size_) {
       if (filesize > offset) {
         index[owner].push_back(std::make_pair(offset, (filesize - offset)));
+        count += (filesize - offset);
       }
       break;
     }
@@ -71,7 +75,10 @@ std::unique_ptr<KeyValueRDDStub> RDDContext::TextFile(const std::string &filenam
     uint64_t end = ifs.tellg();
 
     index[owner].push_back(std::make_pair(offset, (end - offset)));
+    count += (end - offset);
   }
+
+  std::cout << "count: " << count << std::endl;
 
   ifs.close();
 
