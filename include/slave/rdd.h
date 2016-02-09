@@ -15,6 +15,8 @@ class RDD {
   RDD() { }
   virtual ~RDD() { }
 
+  virtual void Compute() = 0;
+
   virtual void Print() = 0;
 
  protected:

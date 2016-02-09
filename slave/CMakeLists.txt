@@ -14,7 +14,7 @@ set(SLAVE_SOURCE_FILES
         ../include/slave/rpc_shuffle_server.h rpc_shuffle_server.cc
         ../include/slave/rpc_shuffle_client.h rpc_shuffle_client.cc
         ../include/slave/pairwise_shuffle_server.h pairwise_shuffle_server.cc
-        ../include/slave/pairwise_shuffle_client.h pairwise_shuffle_client.cc)
+        ../include/slave/pairwise_shuffle_client.h pairwise_shuffle_client.cc ../include/slave/text_file_rdd.h)
 
 add_executable(RDDSlave ${SLAVE_SOURCE_FILES})
 

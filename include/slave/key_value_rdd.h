@@ -21,41 +21,16 @@ class KeyValueRDD: public RDD {
 
   KeyValueRDD() {}
 
-  KeyValueRDD(const std::unordered_map<K, V, tbb::tbb_hash<K>> &key_values) : key_values_(key_values) { }
-
   KeyValueRDD(tbb::concurrent_unordered_map<K, V> &&key_values) {
     for (auto &&kv : key_values) {
       key_values_.insert(kv);
     }
   }
 
-  KeyValueRDD(const std::string &filename, const long long int offset, const int size)
-      : filename_(filename), chunk_offset_(offset), chunk_size_(size) {};
-
-  void Materialize() {
-    std::ifstream ifs(filename_);
-    std::unique_ptr<char []> buf(new char[chunk_size_ + 1]);
-
-    ifs.seekg(chunk_offset_);
-    ifs.read(buf.get(), chunk_size_);
-    buf[chunk_size_] = '\0';
-    ifs.close();
-
-    char *save_ptr;
-    auto offset = chunk_offset_;
-    auto line = strtok_r(buf.get(), "\n", &save_ptr);
-    while (line != nullptr) {
-      auto len = std::char_traits<char>::length(line);
-      key_values_.emplace(std::make_pair(offset, std::string(line, len)));
-      offset += (len + 1);
-      line = strtok_r(nullptr, "\n", &save_ptr);
-    }
-  }
-
   template<typename NK, typename NV>
   std::unique_ptr<KeyValuesRDD<NK, NV>> Map(const std::string &dl_filename) {
     if (key_values_.size() == 0) {
-      Materialize();
+      Compute();
     }
 
     void *handle = LoadLib(dl_filename);
@@ -74,8 +49,6 @@ class KeyValueRDD: public RDD {
 
     auto mapper = create_mapper();
 
-    //std::unordered_map<NK, std::vector<NV>, tbb::tbb_hash<NK>> kvs;
-    //std::unordered_map<NK, std::vector<NV>> kvs;
     google::dense_hash_map<NK, std::vector<NV>> kvs;
     kvs.set_empty_key("");
 
@@ -89,6 +62,9 @@ class KeyValueRDD: public RDD {
     return std::unique_ptr<KeyValuesRDD<NK, NV>>(new KeyValuesRDD<NK, NV>(std::move(kvs)));
   }
 
+  // TODO: implement this for lazy evaluation
+  virtual void Compute() override { }
+
   virtual void Pack(std::vector<msgpack::sbuffer> &buffers) const override {}
   virtual void Unpack(const char *buf, size_t len) override { }
 
@@ -101,11 +77,8 @@ class KeyValueRDD: public RDD {
     }
   }
 
- private:
+ protected:
   std::unordered_map<K, V, tbb::tbb_hash<K>> key_values_;
-  std::string filename_;
-  long long int chunk_offset_;
-  int chunk_size_;
 
 };
 

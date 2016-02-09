@@ -4,6 +4,7 @@
 
 #include <sstream>
 #include <fstream>
+#include <slave/text_file_rdd.h>
 #include "slave/rpc_shuffle_server.h"
 #include "slave/rpc_shuffle_client.h"
 #include "slave/pairwise_shuffle_server.h"
@@ -85,8 +86,8 @@ rdd_rpc::Response Executor::DistributeText(msgpack::rpc::request &req) {
 
   for (const auto &index : indices) {
     rdds_[rdd_id].push_back(
-        std::unique_ptr<KeyValueRDD<uint64_t, std::string>>
-            (new KeyValueRDD<uint64_t, std::string>(filename, index.first, index.second)));
+        std::unique_ptr<TextFileRDD>(new TextFileRDD(filename, index.first, index.second))
+    );
   }
 
   return rdd_rpc::Response::OK;
@@ -106,7 +107,7 @@ rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
       [&](tbb::blocked_range<int> &range) {
         for (int i = range.begin(); i < range.end(); i++) {
           // TODO dirty hack :)
-          auto new_rdd = static_cast<KeyValueRDD<uint64_t, std::string> *>(rdds[i].get())
+          auto new_rdd = static_cast<TextFileRDD *>(rdds[i].get())
               ->Map<std::string, int>(dl_mapper);
           new_rdd->PutBlocks(*block_mgr_);
           new_rdds.push_back(std::move(new_rdd));
@@ -132,7 +133,7 @@ rdd_rpc::Response Executor::MapWithCombine(msgpack::rpc::request &req) {
       [&](tbb::blocked_range<int> &range) {
         for (int i = range.begin(); i < range.end(); i++) {
           // TODO dirty hack :)
-          auto new_rdd = static_cast<KeyValueRDD<uint64_t, std::string> *>(rdds[i].get())
+          auto new_rdd = static_cast<TextFileRDD *>(rdds[i].get())
               ->Map<std::string, int>(dl_mapper);
           new_rdd->Combine(dl_combiner);
           new_rdd->PutBlocks(*block_mgr_);
@@ -174,7 +175,7 @@ rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
       [&](tbb::blocked_range<int> &range) {
         for (int i = range.begin(); i < range.end(); i++) {
           // TODO dirty hack :)
-          auto new_rdd = static_cast<KeyValueRDD<uint64_t, std::string> *>(rdds[i].get())
+          auto new_rdd = static_cast<TextFileRDD *>(rdds[i].get())
               ->Map<std::string, int>(dl_mapper);
           new_rdd->Combine(dl_combiner);
           new_rdd->PutBlocks(*block_mgr_);

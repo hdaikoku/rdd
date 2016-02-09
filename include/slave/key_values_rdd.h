@@ -95,6 +95,9 @@ class KeyValuesRDD: public RDD {
     return std::unique_ptr<KeyValueRDD<NK, NV>>(new KeyValueRDD<NK, NV>(std::move(kvs)));
   }
 
+  // TODO: implement this for lazy evaluation
+  virtual void Compute() override { }
+
   virtual void PutBlocks(BlockManager &block_mgr) override {
     int n_reducers = block_mgr.GetNumOfBuffers();
     std::vector<msgpack::sbuffer> buffers(n_reducers);
