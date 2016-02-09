@@ -8,10 +8,10 @@
 #include <fstream>
 #include "key_value_rdd.h"
 
-class TextFileRDD: public KeyValueRDD<uint64_t, std::string> {
+class TextFileRDD: public KeyValueRDD<int64_t, std::string> {
  public:
 
-  TextFileRDD(const std::string &file_name, uint64_t chunk_offset, uint32_t chunk_size)
+  TextFileRDD(const std::string &file_name, int64_t chunk_offset, int32_t chunk_size)
       : KeyValueRDD(), file_name_(file_name), chunk_offset_(chunk_offset), chunk_size_(chunk_size) { }
 
   virtual void Compute() override {
@@ -36,8 +36,8 @@ class TextFileRDD: public KeyValueRDD<uint64_t, std::string> {
 
  private:
   std::string file_name_;
-  uint64_t chunk_offset_;
-  uint32_t chunk_size_;
+  int64_t chunk_offset_;
+  int32_t chunk_size_;
 };
 
 #endif //PROJECT_TEXT_FILE_RDD_H
