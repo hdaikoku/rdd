@@ -92,7 +92,7 @@ class RDDContext {
   msgpack::rpc::session_pool sp_;
   size_t n_slaves_;
   int next_dst_id_;
-  int default_chunk_size_;
+  uint32_t default_chunk_size_;
   int last_rdd_id_;
 
   void Init();

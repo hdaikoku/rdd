@@ -43,7 +43,7 @@ std::unique_ptr<KeyValueRDDStub> RDDContext::TextFile(const std::string &filenam
   std::ifstream ifs(filename);
 
   std::vector<msgpack::rpc::future> fs;
-  std::unordered_map<int, std::vector<std::pair<uint64_t, int>>> index;
+  std::unordered_map<int, std::vector<std::pair<uint64_t, uint32_t>>> index;
   std::unordered_set<int> owners;
   int owner;
   int rdd_id = GetNewRddId();

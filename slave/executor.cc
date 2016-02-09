@@ -80,7 +80,7 @@ rdd_rpc::Response Executor::TextFile(msgpack::rpc::request &req) {
 
   int rdd_id;
   std::string filename;
-  std::vector<std::pair<uint64_t, int>> indices;
+  std::vector<std::pair<uint64_t, uint32_t>> indices;
 
   ParseParams(req, rdd_id, filename, indices);
 
