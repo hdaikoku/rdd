@@ -22,9 +22,9 @@ void Executor::dispatch(msgpack::rpc::request req) {
       // initial greeting
       req.result(Hello(req));
 
-    } else if (method == "distribute") {
-      // create KeyValueRDD from received text
-      req.result(DistributeText(req));
+    } else if (method == "textfile") {
+      // create TextFileRDD from received indices of a text file
+      req.result(TextFile(req));
 
     } else if (method == "map") {
       // Map specified RDD
@@ -75,8 +75,8 @@ rdd_rpc::Response Executor::Hello(msgpack::rpc::request &req) {
   return rdd_rpc::Response::OK;
 }
 
-rdd_rpc::Response Executor::DistributeText(msgpack::rpc::request &req) {
-  std::cout << "distribute_text called" << std::endl;
+rdd_rpc::Response Executor::TextFile(msgpack::rpc::request &req) {
+  std::cout << "textfile called" << std::endl;
 
   int rdd_id;
   std::string filename;

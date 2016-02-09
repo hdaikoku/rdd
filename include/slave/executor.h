@@ -29,7 +29,7 @@ class Executor: public msgpack::rpc::dispatcher {
   std::unique_ptr<BlockManager> block_mgr_;
 
   rdd_rpc::Response Hello(msgpack::rpc::request &req);
-  rdd_rpc::Response DistributeText(msgpack::rpc::request &req);
+  rdd_rpc::Response TextFile(msgpack::rpc::request &req);
   rdd_rpc::Response Map(msgpack::rpc::request &req);
   rdd_rpc::Response MapWithCombine(msgpack::rpc::request &req);
   rdd_rpc::Response MapWithShuffle(msgpack::rpc::request &req);

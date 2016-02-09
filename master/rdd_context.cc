@@ -8,7 +8,7 @@
 #include "rdd_rpc.h"
 
 void RDDContext::Init() {
-  // default size of chunks: 32 MB
+  // default size of chunks: 128 MiB
   default_chunk_size_ = (1 << 27);
   last_rdd_id_ = 0;
   next_dst_id_ = 0;
@@ -76,13 +76,13 @@ std::unique_ptr<KeyValueRDDStub> RDDContext::TextFile(const std::string &filenam
   ifs.close();
 
   for (const auto &i : index) {
-    fs.push_back(Call("distribute", i.first, rdd_id, filename, i.second));
+    fs.push_back(Call("textfile", i.first, rdd_id, filename, i.second));
   }
 
   int i = 0;
   for (auto f : fs) {
     if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
-      std::cerr << "could not distribute to "
+      std::cerr << "could not send file indices to "
           << slaves_[i].GetAddr() << ":" << slaves_[i].GetJobPort() << std::endl;
       continue;
     }
