@@ -78,7 +78,7 @@ class KeyValueRDD: public RDD {
   }
 
  protected:
-  std::unordered_map<K, V, tbb::tbb_hash<K>> key_values_;
+  std::unordered_map<K, V> key_values_;
 
 };
 
