@@ -11,20 +11,21 @@
 class TextFileRDD: public KeyValueRDD<int64_t, std::string> {
  public:
 
-  TextFileRDD(const std::string &file_name, int64_t chunk_offset, int32_t chunk_size)
-      : KeyValueRDD(), file_name_(file_name), chunk_offset_(chunk_offset), chunk_size_(chunk_size) { }
+  TextFileRDD(int n_partitions, const std::string &filename, const TextFileIndex &index)
+      : KeyValueRDD(n_partitions, index.GetPartitionID()), filename_(filename),
+        offset_(index.GetOffset()), size_(index.GetSize()) { }
 
   virtual void Compute() override {
-    std::ifstream ifs(file_name_);
-    std::unique_ptr<char[]> buf(new char[chunk_size_ + 1]);
+    std::ifstream ifs(filename_);
+    std::unique_ptr<char[]> buf(new char[size_ + 1]);
 
-    ifs.seekg(chunk_offset_);
-    ifs.read(buf.get(), chunk_size_);
-    buf[chunk_size_] = '\0';
+    ifs.seekg(offset_);
+    ifs.read(buf.get(), size_);
+    buf[size_] = '\0';
     ifs.close();
 
     char *save_ptr;
-    auto offset = chunk_offset_;
+    auto offset = offset_;
     auto line = strtok_r(buf.get(), "\n", &save_ptr);
     while (line != nullptr) {
       auto len = std::char_traits<char>::length(line);
@@ -35,9 +36,9 @@ class TextFileRDD: public KeyValueRDD<int64_t, std::string> {
   }
 
  private:
-  std::string file_name_;
-  int64_t chunk_offset_;
-  int32_t chunk_size_;
+  std::string filename_;
+  int64_t offset_;
+  int32_t size_;
 };
 
 #endif //PROJECT_TEXT_FILE_RDD_H

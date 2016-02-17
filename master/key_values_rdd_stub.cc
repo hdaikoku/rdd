@@ -10,9 +10,9 @@ std::unique_ptr<KeyValueRDDStub> KeyValuesRDDStub::Reduce(const std::string &dl_
   std::vector<msgpack::rpc::future> fs;
   int new_rdd_id = rc_.GetNewRddId();
 
-  for (auto o : owners_) {
-    rc_.SetTimeout(o, 600);
-    fs.push_back(rc_.Call("reduce", o, rdd_id_, dl_filename, new_rdd_id));
+  for (auto p : partition_ids_) {
+    rc_.SetTimeout(p.first, 600);
+    fs.push_back(rc_.Call("reduce", p.first, rdd_id_, dl_filename, new_rdd_id));
   }
 
   for (auto f : fs) {
@@ -21,7 +21,7 @@ std::unique_ptr<KeyValueRDDStub> KeyValuesRDDStub::Reduce(const std::string &dl_
     }
   }
 
-  return std::unique_ptr<KeyValueRDDStub>(new KeyValueRDDStub(rc_, new_rdd_id, owners_));
+  return std::unique_ptr<KeyValueRDDStub>(new KeyValueRDDStub(rc_, new_rdd_id, partition_ids_));
 }
 
 // shuffles key-values by pairwise algorithm
@@ -29,15 +29,21 @@ bool KeyValuesRDDStub::Shuffle() {
   bool ret = true;
   std::vector<msgpack::rpc::future> fs;
 
-  int n_steps = owners_.size();
+  int n_steps = partition_ids_.size();
 
   for (int step = 1; step < n_steps; step++) {
-    for (auto owner : owners_) {
-      int dest = owner ^step;
-      if (dest > owner) {
-        fs.push_back(rc_.Call("shuffle_srv", owner, dest));
+    for (auto p : partition_ids_) {
+      int dest = p.first ^step;
+      std::vector<int> partition_ids;
+      GetPartitionIDsByOwner(dest, partition_ids);
+      if (dest > p.first) {
+        fs.push_back(rc_.Call("shuffle_srv", p.first, partition_ids));
       } else {
-        fs.push_back(rc_.Call("shuffle_cli", owner, dest, rc_.GetSlaveAddrById(dest)));
+        fs.push_back(rc_.Call("shuffle_cli",
+                              p.first,
+                              partition_ids,
+                              rc_.GetSlaveAddrById(dest),
+                              rc_.GetSlavePortById(dest)));
       }
     }
 
@@ -57,18 +63,4 @@ bool KeyValuesRDDStub::Shuffle() {
   }
 
   return ret;
-}
-
-void KeyValuesRDDStub::Print() {
-  std::vector<msgpack::rpc::future> fs;
-
-  for (auto o : owners_) {
-    fs.push_back(rc_.Call("print", o, rdd_id_));
-  }
-
-  for (auto f : fs) {
-    if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
-      std::cout << "oops" << std::endl;
-    }
-  }
 }

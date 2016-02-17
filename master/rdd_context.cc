@@ -8,21 +8,18 @@
 #include "rdd_rpc.h"
 
 void RDDContext::Init() {
-  // default size of chunks: 128 MiB
-  default_chunk_size_ = (1 << 27);
   last_rdd_id_ = 0;
-  next_dst_id_ = 0;
-  n_slaves_ = slaves_.size();
+  auto n_slaves = slaves_.size();
 
-  sp_.set_pool_size_limit(n_slaves_);
+  sp_.set_pool_size_limit(n_slaves);
 
   std::vector<msgpack::rpc::future> fs;
   int slave_id;
-  for (slave_id = 0; slave_id < n_slaves_; slave_id++) {
+  for (slave_id = 0; slave_id < n_slaves; slave_id++) {
     fs.push_back(Call("hello", slave_id, slave_id, slaves_));
   }
 
-  for (slave_id = 0; slave_id < n_slaves_; slave_id++) {
+  for (slave_id = 0; slave_id < n_slaves; slave_id++) {
     if (fs[slave_id].get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
       std::cerr << "could not connect to "
           << slaves_[slave_id].GetAddr() << ":" << slaves_[slave_id].GetJobPort() << std::endl;
@@ -30,8 +27,14 @@ void RDDContext::Init() {
   }
 }
 
-void RDDContext::SetTimeout(int dest, unsigned int timeout) {
-  sp_.get_session(slaves_[dest].GetAddr(), slaves_[dest].GetJobPort()).set_timeout(timeout);
+// opens the file, makes indices, sends them to slaves and returns a stub for TextFileRDD
+std::unique_ptr<TextFileRDDStub> RDDContext::TextFile(const std::string &filename) {
+  return TextFileRDDStub::NewInstance(*this, filename);
+}
+
+// Returns number of slaves
+int RDDContext::GetNumSlaves() const {
+  return slaves_.size();
 }
 
 // Returns new RDD id
@@ -39,59 +42,14 @@ int RDDContext::GetNewRddId() {
   return last_rdd_id_++;
 }
 
-std::unique_ptr<KeyValueRDDStub> RDDContext::TextFile(const std::string &filename) {
-  std::ifstream ifs(filename);
-
-  std::vector<msgpack::rpc::future> fs;
-  std::unordered_map<int, std::vector<std::pair<int64_t, int32_t>>> index;
-  std::unordered_set<int> owners;
-  int owner;
-  int rdd_id = GetNewRddId();
-
-  int64_t filesize = ifs.seekg(0, ifs.end).tellg();
-  ifs.seekg(0, ifs.beg);
-
-  while (!ifs.eof()) {
-    owner = next_dst_id_++ % n_slaves_;
-
-    int64_t offset = ifs.tellg();
-
-    if ((filesize - offset) < default_chunk_size_) {
-      if (filesize > offset) {
-        index[owner].push_back(std::make_pair(offset, (filesize - offset)));
-      }
-      break;
-    }
-
-    ifs.seekg(default_chunk_size_, ifs.cur);
-
-    if (!ifs.eof()) {
-      ifs.ignore(default_chunk_size_, '\n');
-    }
-    int64_t end = ifs.tellg();
-
-    index[owner].push_back(std::make_pair(offset, (end - offset)));
-  }
-
-  ifs.close();
-
-  for (const auto &i : index) {
-    fs.push_back(Call("textfile", i.first, rdd_id, filename, i.second));
-  }
-
-  int i = 0;
-  for (auto f : fs) {
-    if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
-      std::cerr << "could not send file indices to "
-          << slaves_[i].GetAddr() << ":" << slaves_[i].GetJobPort() << std::endl;
-      continue;
-    }
-    owners.insert(i++);
-  }
-
-  return std::unique_ptr<KeyValueRDDStub>(new KeyValueRDDStub(*this, rdd_id, owners));
+std::string RDDContext::GetSlaveAddrById(const int &id) const {
+  return slaves_[id].GetAddr();
 }
 
-std::string RDDContext::GetSlaveAddrById(const int &id) {
-  return slaves_[id].GetAddr();
+int RDDContext::GetSlavePortById(const int &id) const {
+  return slaves_[id].GetDataPort();
+}
+
+void RDDContext::SetTimeout(int dest, unsigned int timeout) {
+  sp_.get_session(slaves_[dest].GetAddr(), slaves_[dest].GetJobPort()).set_timeout(timeout);
 }

@@ -7,19 +7,29 @@
 
 class RDDContext;
 
-#include <unordered_set>
+#include <unordered_map>
+#include <vector>
 
 class RDDStub {
-
  public:
 
-  RDDStub(RDDContext &rc_, int rdd_id_, const std::unordered_set<int> &owners_)
-      : rdd_id_(rdd_id_), owners_(owners_), rc_(rc_) { }
+  RDDStub(RDDContext &rc_, int rdd_id_)
+      : rc_(rc_), rdd_id_(rdd_id_) { }
+
+  RDDStub(RDDContext &rc, int rdd_id, const std::unordered_map<int, std::vector<int>> &partition_ids)
+      : rc_(rc), rdd_id_(rdd_id), partition_ids_(partition_ids) { }
+
+  void AddPartition(int owner, int partition_id);
+
+  void GetPartitionIDsByOwner(int owner, std::vector<int> &partition_ids);
+
+  void Print() const;
 
  protected:
   int rdd_id_;
-  std::unordered_set<int> owners_;
+  std::unordered_map<int, std::vector<int>> partition_ids_;
   RDDContext &rc_;
+
 };
 
 

@@ -7,19 +7,27 @@
 
 #include <msgpack.hpp>
 #include <string>
-#include <slave/block_manager.h>
 #include <vector>
+#include "slave/block_manager.h"
 
 class RDD {
  public:
   RDD() { }
+  RDD(int n_partitions, int partition_id) : n_partitions_(n_partitions), partition_id_(partition_id) { }
   virtual ~RDD() { }
 
   virtual void Compute() = 0;
 
   virtual void Print() = 0;
 
+  int GetNumPartitions() const;
+
+  int GetPartitionID() const;
+
  protected:
+  int n_partitions_;
+  int partition_id_;
+
   void *LoadLib(const std::string &dl_filename);
   void *LoadFunc(void *handle, const std::string &func_name);
 
@@ -27,7 +35,7 @@ class RDD {
   virtual void Unpack(const char *buf, size_t len) = 0;
 
   virtual void PutBlocks(BlockManager &block_mgr) = 0;
-  virtual void GetBlocks(BlockManager &block_mgr, int my_rank) = 0;
+  virtual void GetBlocks(BlockManager &block_mgr) = 0;
 
   inline std::string ToString(const long long int &s) const {
     return std::to_string(s);

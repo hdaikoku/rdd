@@ -21,9 +21,12 @@ class KeyValueRDD: public RDD {
 
   KeyValueRDD() {}
 
-  KeyValueRDD(tbb::concurrent_unordered_map<K, V> &&key_values) {
-    for (auto &&kv : key_values) {
-      key_values_.insert(kv);
+  KeyValueRDD(int n_partitions, int partition_id) : RDD(n_partitions, partition_id) { }
+
+  KeyValueRDD(int n_partitions, int partition_id, google::dense_hash_map<K, V> &&key_values)
+      : RDD(n_partitions, partition_id) {
+    for (const auto &kv : key_values) {
+      key_values_.insert(std::move(kv));
     }
   }
 
@@ -59,7 +62,9 @@ class KeyValueRDD: public RDD {
     mapper.reset(nullptr);
     dlclose(handle);
 
-    return std::unique_ptr<KeyValuesRDD<NK, NV>>(new KeyValuesRDD<NK, NV>(std::move(kvs)));
+    return std::unique_ptr<KeyValuesRDD<NK, NV>>(new KeyValuesRDD<NK, NV>(n_partitions_,
+                                                                          partition_id_,
+                                                                          std::move(kvs)));
   }
 
   // TODO: implement this for lazy evaluation
@@ -69,7 +74,7 @@ class KeyValueRDD: public RDD {
   virtual void Unpack(const char *buf, size_t len) override { }
 
   virtual void PutBlocks(BlockManager &block_mgr) override {}
-  virtual void GetBlocks(BlockManager &block_mgr, int my_rank) override {}
+  virtual void GetBlocks(BlockManager &block_mgr) override { }
 
   virtual void Print() override {
     for (const auto kvs : key_values_) {

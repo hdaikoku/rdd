@@ -5,21 +5,16 @@
 #ifndef MASTERRDD_RDD_CONTEXT_H
 #define MASTERRDD_RDD_CONTEXT_H
 
+class RDDStub;
+
 #include <fstream>
 #include <string>
 #include <jubatus/msgpack/rpc/session_pool.h>
-#include "key_value_rdd_stub.h"
+#include "master/text_file_rdd_stub.h"
 #include "slave_context.h"
 
 class RDDContext {
  public:
-  RDDContext(const std::vector<SlaveContext> &slaves) : slaves_(slaves) {
-    Init();
-  }
-
-  virtual ~RDDContext() {
-    sp_.end();
-  }
 
   static std::unique_ptr<RDDContext> NewContext(const std::string &conf_path) {
     std::ifstream ifs(conf_path);
@@ -36,6 +31,19 @@ class RDDContext {
 
     return std::unique_ptr<RDDContext>(new RDDContext(slaves));
   }
+
+  virtual ~RDDContext() {
+    sp_.end();
+  }
+
+  std::unique_ptr<TextFileRDDStub> TextFile(const std::string &filename);
+
+  int GetNumSlaves() const;
+
+  int GetNewRddId();
+
+  std::string GetSlaveAddrById(const int &id) const;
+  int GetSlavePortById(const int &id) const;
 
   void SetTimeout(int dest, unsigned int timeout);
 
@@ -80,20 +88,14 @@ class RDDContext {
     return sp_.get_session(slaves_[dest].GetAddr(), slaves_[dest].GetJobPort()).call(func, a1, a2, a3, a4, a5);
   }
 
-
-  int GetNewRddId();
-
-  std::string GetSlaveAddrById(const int &id);
-
-  std::unique_ptr<KeyValueRDDStub> TextFile(const std::string &filename);
-
  private:
   std::vector<SlaveContext> slaves_;
   msgpack::rpc::session_pool sp_;
-  int32_t default_chunk_size_;
-  int n_slaves_;
-  int next_dst_id_;
   int last_rdd_id_;
+
+  RDDContext(const std::vector<SlaveContext> &slaves) : slaves_(slaves) {
+    Init();
+  }
 
   void Init();
 

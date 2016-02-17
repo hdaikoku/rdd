@@ -23,7 +23,11 @@ class BlockManager {
 
   void PutBlock(int buffer_id, size_t len, std::unique_ptr<char[]> block);
 
-  int GetNumOfBuffers() {
+  void PackBlocks(int partition_id, msgpack::sbuffer &sbuf, std::vector<std::unique_ptr<char[]>> &refs);
+
+  void UnpackBlocks(const char *buf, size_t len);
+
+  int GetNumBuffers() {
     return n_buffers_;
   }
 

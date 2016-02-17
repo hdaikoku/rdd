@@ -4,13 +4,13 @@
 
 #include <sstream>
 #include <fstream>
-#include <slave/text_file_rdd.h>
+#include "text_file_index.h"
+#include "slave/text_file_rdd.h"
 #include "slave/rpc_shuffle_server.h"
 #include "slave/rpc_shuffle_client.h"
 #include "slave/pairwise_shuffle_server.h"
 #include "slave/pairwise_shuffle_client.h"
 #include "slave/executor.h"
-#include "slave/key_value_rdd.h"
 #include "slave/key_values_rdd.h"
 
 void Executor::dispatch(msgpack::rpc::request req) {
@@ -79,14 +79,15 @@ rdd_rpc::Response Executor::TextFile(msgpack::rpc::request &req) {
   std::cout << "textfile called" << std::endl;
 
   int rdd_id;
+  int n_partitions;
   std::string filename;
-  std::vector<std::pair<int64_t, int32_t>> indices;
+  std::vector<TextFileIndex> indices;
 
-  ParseParams(req, rdd_id, filename, indices);
+  ParseParams(req, rdd_id, n_partitions, filename, indices);
 
   for (const auto &index : indices) {
     rdds_[rdd_id].push_back(
-        std::unique_ptr<TextFileRDD>(new TextFileRDD(filename, index.first, index.second))
+        std::unique_ptr<TextFileRDD>(new TextFileRDD(n_partitions, filename, index))
     );
   }
 
@@ -125,8 +126,9 @@ rdd_rpc::Response Executor::MapWithCombine(msgpack::rpc::request &req) {
   std::string dl_mapper, dl_combiner;
   ParseParams(req, rdd_id, dl_mapper, dl_combiner, new_rdd_id);
 
-  block_mgr_.reset(new BlockManager(executors_.size()));
   auto &rdds = rdds_[rdd_id];
+  assert(rdds.size() > 0);
+  block_mgr_.reset(new BlockManager(rdds[0]->GetNumPartitions()));
   auto &new_rdds = rdds_[new_rdd_id];
   tbb::parallel_for(
       tbb::blocked_range<int>(0, rdds.size(), 1),
@@ -194,11 +196,11 @@ rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
 rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
   std::cout << "shuffle_srv called" << std::endl;
 
-  int dest_id;
-  ParseParams(req, dest_id);
+  std::vector<int> partition_ids;
+  ParseParams(req, partition_ids);
 
   PairwiseShuffleServer shuffle_server(id_, *block_mgr_);
-  shuffle_server.Start(dest_id, executors_[id_].GetDataPort());
+  shuffle_server.Start(partition_ids, executors_[id_].GetDataPort());
 
   return rdd_rpc::Response::OK;
 }
@@ -206,12 +208,13 @@ rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
 rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
   std::cout << "shuffle_cli called" << std::endl;
 
+  std::vector<int> partition_ids;
   std::string server_addr;
-  int dest_id;
-  ParseParams(req, dest_id, server_addr);
+  int server_port;
+  ParseParams(req, partition_ids, server_addr, server_port);
 
   PairwiseShuffleClient shuffle_client(id_, *block_mgr_);
-  shuffle_client.Start(dest_id, server_addr, executors_[dest_id].GetDataPort());
+  shuffle_client.Start(partition_ids, server_addr, server_port);
 
   return rdd_rpc::Response::OK;
 }
@@ -223,11 +226,19 @@ rdd_rpc::Response Executor::Reduce(msgpack::rpc::request &req) {
   std::string dl_filename;
   ParseParams(req, rdd_id, dl_filename, new_rdd_id);
 
-  auto kvs_rdd = static_cast<KeyValuesRDD<std::string, int> *>(rdds_[rdd_id][0].get());
-  kvs_rdd->GetBlocks(*block_mgr_, id_);
-
-  // TODO dirty hack :)
-  rdds_[new_rdd_id].push_back(kvs_rdd->Reduce<std::string, int>(dl_filename));
+  auto &rdds = rdds_[rdd_id];
+  auto &new_rdds = rdds_[new_rdd_id];
+  tbb::parallel_for(
+      tbb::blocked_range<int>(0, rdds.size(), 1),
+      [&](tbb::blocked_range<int> &range) {
+        for (int i = range.begin(); i < range.end(); i++) {
+          // TODO dirty hack :)
+          auto rdd = static_cast<KeyValuesRDD<std::string, int> *>(rdds[i].get());
+          rdd->GetBlocks(*block_mgr_);
+          new_rdds.push_back(rdd->Reduce<std::string, int>(dl_filename));
+        }
+      }
+  );
 
   return rdd_rpc::Response::OK;
 }

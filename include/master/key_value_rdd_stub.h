@@ -7,19 +7,21 @@
 
 #include <memory>
 #include "rdd_stub.h"
-#include "key_values_rdd_stub.h"
+#include "master/rdd_context.h"
+#include "master/key_values_rdd_stub.h"
 
 class KeyValueRDDStub: public RDDStub {
  public:
 
-  KeyValueRDDStub(RDDContext& rc, int rdd_id, const std::unordered_set<int> &owners) : RDDStub(rc, rdd_id, owners) { }
+  KeyValueRDDStub(RDDContext &rc, int rdd_id) : RDDStub(rc, rdd_id) { }
+
+  KeyValueRDDStub(RDDContext &rc, int rdd_id, const std::unordered_map<int, std::vector<int>> &partition_ids)
+      : RDDStub(rc, rdd_id, partition_ids) { }
 
   std::unique_ptr<KeyValuesRDDStub> Map(const std::string &dl_filename);
 
   std::unique_ptr<KeyValuesRDDStub> Map(const std::string &dl_mapper, const std::string &dl_combiner, bool overlap = true);
 
-  void Print();
 };
-
 
 #endif //SLAVERDD_KEY_VALUE_RDD_STUB_H

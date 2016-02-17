@@ -7,7 +7,9 @@
 #include "slave/pairwise_shuffle_client.h"
 
 
-void PairwiseShuffleClient::Start(int server_id, const std::string &server_addr, int server_port) {
+void PairwiseShuffleClient::Start(const std::vector<int> &partition_ids,
+                                  const std::string &server_addr,
+                                  int server_port) {
   int sock_fd;
   SocketClient client(server_addr, std::to_string(server_port));
   std::cout << "connecting to " << server_addr << ":" << server_port << std::endl;
@@ -19,7 +21,9 @@ void PairwiseShuffleClient::Start(int server_id, const std::string &server_addr,
 
   msgpack::sbuffer sbuf;
   std::vector<std::unique_ptr<char[]>> refs;
-  PackBlocks(server_id, sbuf, refs);
+  for (const auto &p : partition_ids) {
+    block_mgr_.PackBlocks(p, sbuf, refs);
+  }
 
   if (client.WriteWithHeader(sock_fd, sbuf.data(), sbuf.size()) < 0) {
     std::cerr << "write failed" << std::endl;
@@ -34,31 +38,6 @@ void PairwiseShuffleClient::Start(int server_id, const std::string &server_addr,
     return;
   }
 
-  UnpackBlocks(rbuf.get(), len);
+  block_mgr_.UnpackBlocks(rbuf.get(), len);
 }
 
-void PairwiseShuffleClient::PackBlocks(int server_rank,
-                                       msgpack::sbuffer &sbuf,
-                                       std::vector<std::unique_ptr<char[]>> &refs) {
-  long len = 0;
-  while (true) {
-    auto block = block_mgr_.GetBlock(server_rank, len);
-    if (len == -1) {
-      break;
-    }
-    msgpack::pack(&sbuf, msgpack::type::raw_ref(block.get(), len));
-    refs.push_back(std::move(block));
-  }
-}
-
-void PairwiseShuffleClient::UnpackBlocks(const char *buf, size_t len) {
-  size_t offset = 0;
-  msgpack::unpacked unpacked;
-  while (offset != len) {
-    msgpack::unpack(&unpacked, buf, len, &offset);
-    auto raw = unpacked.get().via.raw;
-    std::unique_ptr<char[]> block(new char[raw.size]);
-    memcpy(block.get(), raw.ptr, raw.size);
-    block_mgr_.PutBlock(my_rank_, raw.size, std::move(block));
-  }
-}

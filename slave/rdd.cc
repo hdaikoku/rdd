@@ -26,3 +26,11 @@ void *RDD::LoadFunc(void *handle, const std::string &func_name) {
 
   return func;
 }
+
+int RDD::GetNumPartitions() const {
+  return n_partitions_;
+}
+
+int RDD::GetPartitionID() const {
+  return partition_id_;
+}

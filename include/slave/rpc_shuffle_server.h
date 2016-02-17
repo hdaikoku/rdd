@@ -12,7 +12,7 @@ class RPCShuffleServer: public msgpack::rpc::server::base {
 
  public:
   RPCShuffleServer(BlockManager &block_mgr) : block_mgr_(block_mgr), n_finished_(0) {
-    n_clients_ = block_mgr_.GetNumOfBuffers() - 1;
+    n_clients_ = block_mgr_.GetNumBuffers() - 1;
   }
 
   virtual void dispatch(msgpack::rpc::request req) override;

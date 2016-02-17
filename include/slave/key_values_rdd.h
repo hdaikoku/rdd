@@ -22,7 +22,8 @@ template<typename K, typename V>
 class KeyValuesRDD: public RDD {
  public:
 
-  KeyValuesRDD(google::dense_hash_map<K, std::vector<V>> &&key_values) {
+  KeyValuesRDD(int n_partitions, int partition_id, google::dense_hash_map<K, std::vector<V>> &&key_values)
+      : RDD(n_partitions, partition_id) {
     for (const auto &kv : key_values) {
       key_values_.insert(std::move(kv));
     }
@@ -75,23 +76,24 @@ class KeyValuesRDD: public RDD {
 
     auto reducer = create_reducer();
 
-    tbb::concurrent_unordered_map<NK, NV, tbb::tbb_hash<NK>> kvs;
+    google::dense_hash_map<NK, NV> kvs;
+    kvs.set_empty_key("");
 
-    tbb::parallel_for_each(key_values_, [&kvs, &reducer](const std::pair<K, std::vector<V>> &kv) {
+    for (const auto &kv : key_values_) {
       kvs.insert(reducer->Reduce(kv.first, kv.second));
-    });
+    }
 
     reducer.reset(nullptr);
     dlclose(handle);
 
-    return std::unique_ptr<KeyValueRDD<NK, NV>>(new KeyValueRDD<NK, NV>(std::move(kvs)));
+    return std::unique_ptr<KeyValueRDD<NK, NV>>(new KeyValueRDD<NK, NV>(n_partitions_, partition_id_, std::move(kvs)));
   }
 
   // TODO: implement this for lazy evaluation
   virtual void Compute() override { }
 
   virtual void PutBlocks(BlockManager &block_mgr) override {
-    int n_reducers = block_mgr.GetNumOfBuffers();
+    auto n_reducers = block_mgr.GetNumBuffers();
     std::vector<msgpack::sbuffer> buffers(n_reducers);
     Pack(buffers);
     for (int i = 0; i < n_reducers; ++i) {
@@ -100,10 +102,10 @@ class KeyValuesRDD: public RDD {
     key_values_.clear();
   }
 
-  virtual void GetBlocks(BlockManager &block_mgr, int my_rank) override {
+  virtual void GetBlocks(BlockManager &block_mgr) override {
     long block_len;
     while (true) {
-      auto block = block_mgr.GetBlock(my_rank, block_len);
+      auto block = block_mgr.GetBlock(partition_id_, block_len);
       if (block_len == -1) {
         break;
       }
@@ -124,10 +126,10 @@ class KeyValuesRDD: public RDD {
   std::unordered_map<K, std::vector<V>> key_values_;
 
   virtual void Pack(std::vector<msgpack::sbuffer> &buffers) const override {
-    auto n_reducers = buffers.size();
+    auto n_partitions = buffers.size();
     auto hasher = key_values_.hash_function();
     for (const auto &kv : key_values_) {
-      auto dest_id = hasher(kv.first) % n_reducers;
+      auto dest_id = hasher(kv.first) % n_partitions;
       msgpack::pack(&buffers[dest_id], kv);
     }
   }
