@@ -14,7 +14,7 @@ class KeyValuesRDDStub: public RDDStub {
 
  public:
 
-  KeyValuesRDDStub(RDDContext *rc, int rdd_id, const std::unordered_set<int> &owners)
+  KeyValuesRDDStub(RDDContext& rc, int rdd_id, const std::unordered_set<int> &owners)
       : RDDStub(rc, rdd_id, owners) { }
 
   std::unique_ptr<KeyValueRDDStub> Reduce(const std::string &dl_filename);

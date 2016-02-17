@@ -13,13 +13,13 @@ class RDDStub {
 
  public:
 
-  RDDStub(RDDContext *rc_, int rdd_id_, const std::unordered_set<int> &owners_)
+  RDDStub(RDDContext &rc_, int rdd_id_, const std::unordered_set<int> &owners_)
       : rdd_id_(rdd_id_), owners_(owners_), rc_(rc_) { }
 
  protected:
   int rdd_id_;
   std::unordered_set<int> owners_;
-  RDDContext *rc_;
+  RDDContext &rc_;
 };
 
 

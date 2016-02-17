@@ -89,7 +89,7 @@ std::unique_ptr<KeyValueRDDStub> RDDContext::TextFile(const std::string &filenam
     owners.insert(i++);
   }
 
-  return std::unique_ptr<KeyValueRDDStub>(new KeyValueRDDStub(this, rdd_id, owners));
+  return std::unique_ptr<KeyValueRDDStub>(new KeyValueRDDStub(*this, rdd_id, owners));
 }
 
 std::string RDDContext::GetSlaveAddrById(const int &id) {

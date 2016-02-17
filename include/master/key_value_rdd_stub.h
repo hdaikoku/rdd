@@ -12,7 +12,7 @@
 class KeyValueRDDStub: public RDDStub {
  public:
 
-  KeyValueRDDStub(RDDContext *rc, int rdd_id, const std::unordered_set<int> &owners) : RDDStub(rc, rdd_id, owners) { }
+  KeyValueRDDStub(RDDContext& rc, int rdd_id, const std::unordered_set<int> &owners) : RDDStub(rc, rdd_id, owners) { }
 
   std::unique_ptr<KeyValuesRDDStub> Map(const std::string &dl_filename);
 

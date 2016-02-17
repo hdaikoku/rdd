@@ -8,11 +8,11 @@
 
 std::unique_ptr<KeyValueRDDStub> KeyValuesRDDStub::Reduce(const std::string &dl_filename) {
   std::vector<msgpack::rpc::future> fs;
-  int new_rdd_id = rc_->GetNewRddId();
+  int new_rdd_id = rc_.GetNewRddId();
 
   for (auto o : owners_) {
-    rc_->SetTimeout(o, 600);
-    fs.push_back(rc_->Call("reduce", o, rdd_id_, dl_filename, new_rdd_id));
+    rc_.SetTimeout(o, 600);
+    fs.push_back(rc_.Call("reduce", o, rdd_id_, dl_filename, new_rdd_id));
   }
 
   for (auto f : fs) {
@@ -35,9 +35,9 @@ bool KeyValuesRDDStub::Shuffle() {
     for (auto owner : owners_) {
       int dest = owner ^step;
       if (dest > owner) {
-        fs.push_back(rc_->Call("shuffle_srv", owner, dest));
+        fs.push_back(rc_.Call("shuffle_srv", owner, dest));
       } else {
-        fs.push_back(rc_->Call("shuffle_cli", owner, dest, rc_->GetSlaveAddrById(dest)));
+        fs.push_back(rc_.Call("shuffle_cli", owner, dest, rc_.GetSlaveAddrById(dest)));
       }
     }
 
@@ -63,7 +63,7 @@ void KeyValuesRDDStub::Print() {
   std::vector<msgpack::rpc::future> fs;
 
   for (auto o : owners_) {
-    fs.push_back(rc_->Call("print", o, rdd_id_));
+    fs.push_back(rc_.Call("print", o, rdd_id_));
   }
 
   for (auto f : fs) {

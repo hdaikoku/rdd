@@ -6,7 +6,8 @@ set(MASTER_SOURCE_FILES
         rdd_context.cc
         key_value_rdd_stub.cc
         key_values_rdd_stub.cc
-        ../include/slave_context.h)
+        ../include/slave_context.h
+        ../include/master/rdd_stub.h rdd_stub.cc)
 
 add_library(RDDMaster STATIC ${MASTER_SOURCE_FILES})
 
