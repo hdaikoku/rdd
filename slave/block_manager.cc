@@ -21,10 +21,6 @@ void BlockManager::PutBlock(int buffer_id, int32_t len, std::unique_ptr<char[]> 
 
 void BlockManager::PackBlocks(int partition_id, msgpack::sbuffer &sbuf, std::vector<std::unique_ptr<char[]>> &refs) {
   int32_t len = 0;
-
-  msgpack::pack(&sbuf, partition_id);
-  uint64_t n_blocks = buffers_[partition_id].unsafe_size();
-  msgpack::pack(&sbuf, n_blocks);
   while (true) {
     auto block = GetBlock(partition_id, len);
     if (len == -1) {
@@ -40,16 +36,10 @@ void BlockManager::UnpackBlocks(int partition_id, const char *buf, size_t len) {
   msgpack::unpacked unpacked;
   while (offset != len) {
     msgpack::unpack(&unpacked, buf, len, &offset);
-    auto partition_id = unpacked.get().as<int>();
-    msgpack::unpack(&unpacked, buf, len, &offset);
-    auto n_blocks = unpacked.get().as<uint64_t>();
-    for (int i = 0; i < n_blocks; i++) {
-      msgpack::unpack(&unpacked, buf, len, &offset);
-      auto raw = unpacked.get().via.raw;
-      std::unique_ptr<char[]> block(new char[raw.size]);
-      memcpy(block.get(), raw.ptr, raw.size);
-      PutBlock(partition_id, raw.size, std::move(block));
-    }
+    auto raw = unpacked.get().via.raw;
+    std::unique_ptr<char[]> block(new char[raw.size]);
+    memcpy(block.get(), raw.ptr, raw.size);
+    PutBlock(partition_id, raw.size, std::move(block));
   }
 }
 
