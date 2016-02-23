@@ -19,34 +19,17 @@ void PairwiseShuffleClient::Start(const std::vector<int> &partition_ids,
     return;
   }
 
-  int partition_id;
   size_t len;
   msgpack::sbuffer sbuf;
   std::vector<std::unique_ptr<char[]>> refs;
   for (const auto &p : partition_ids) {
-    client.Write(sock_fd, &p, sizeof(p));
     block_mgr_.PackBlocks(p, sbuf, refs);
-    len = sbuf.size();
-    client.Write(sock_fd, &len, sizeof(len));
-    client.Write(sock_fd, sbuf.data(), len);
-    sbuf.clear();
   }
-  partition_id = -1;
-  client.Write(sock_fd, &partition_id, sizeof(partition_id));
+  client.WriteWithHeader(sock_fd, sbuf.data(), sbuf.size());
 
-  std::vector<char> rbuf(1 << 19);
-  while (true) {
-    client.Read(sock_fd, &partition_id, sizeof(partition_id));
-    if (partition_id == -1) {
-      break;
-    }
-    client.Read(sock_fd, &len, sizeof(len));
-    if (rbuf.capacity() < len) {
-      rbuf.resize(len);
-    }
-    client.Read(sock_fd, rbuf.data(), len);
-    block_mgr_.UnpackBlocks(partition_id, rbuf.data(), len);
-  }
+
+  auto blocks = client.ReadWithHeader(sock_fd, len);
+  block_mgr_.UnpackBlocks(0, blocks.get(), len);
 
 }
 
