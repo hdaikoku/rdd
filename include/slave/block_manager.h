@@ -23,9 +23,9 @@ class BlockManager {
 
   void PutBlock(int buffer_id, int32_t len, std::unique_ptr<char[]> block);
 
-//  void PackBlocks(int partition_id, msgpack::sbuffer &sbuf, std::vector<std::unique_ptr<char[]>> &refs);
-//
-//  void UnpackBlocks(const char *buf, int32_t len);
+  void PackBlocks(int partition_id, msgpack::sbuffer &sbuf, std::vector<std::unique_ptr<char[]>> &refs);
+
+  void UnpackBlocks(int partition_id, const char *buf, size_t len);
 
   int GetNumBuffers() const;
 

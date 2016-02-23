@@ -3,7 +3,6 @@
 //
 
 #include <iostream>
-#include <cassert>
 #include "socket/socket_client.h"
 #include "slave/pairwise_shuffle_client.h"
 
@@ -21,36 +20,25 @@ void PairwiseShuffleClient::Start(const std::vector<int> &partition_ids,
   }
 
   int partition_id;
-  int32_t len = -1;
+  msgpack::sbuffer sbuf;
+  std::vector<std::unique_ptr<char[]>> refs;
   for (const auto &p : partition_ids) {
     client.Write(sock_fd, &p, sizeof(p));
-    while (true) {
-      auto block = block_mgr_.GetBlock(p, len);
-      client.Write(sock_fd, &len, sizeof(len));
-      if (len == -1) {
-        break;
-      }
-      client.Write(sock_fd, block.get(), static_cast<size_t>(len));
-    }
+    block_mgr_.PackBlocks(p, sbuf, refs);
+    client.WriteWithHeader(sock_fd, sbuf.data(), sbuf.size());
+    sbuf.clear();
   }
   partition_id = -1;
   client.Write(sock_fd, &partition_id, sizeof(partition_id));
 
+  size_t len;
   while (true) {
     client.Read(sock_fd, &partition_id, sizeof(partition_id));
     if (partition_id == -1) {
       break;
     }
-    while (true) {
-      client.Read(sock_fd, &len, sizeof(len));
-      if (len == -1) {
-        break;
-      }
-      assert(len > 0);
-      std::unique_ptr<char[]> buf(new char[len]);
-      client.Read(sock_fd, buf.get(), static_cast<size_t>(len));
-      block_mgr_.PutBlock(partition_id, len, std::move(buf));
-    }
+    auto block = client.ReadWithHeader(sock_fd, len);
+    block_mgr_.UnpackBlocks(partition_id, block.get(), len);
   }
 
 }
