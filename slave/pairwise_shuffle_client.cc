@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include <cassert>
 #include "socket/socket_client.h"
 #include "slave/pairwise_shuffle_client.h"
 
@@ -19,25 +20,38 @@ void PairwiseShuffleClient::Start(const std::vector<int> &partition_ids,
     return;
   }
 
-  msgpack::sbuffer sbuf;
-  std::vector<std::unique_ptr<char[]>> refs;
+  int partition_id;
+  int32_t len = -1;
   for (const auto &p : partition_ids) {
-    block_mgr_.PackBlocks(p, sbuf, refs);
+    client.Write(sock_fd, &p, sizeof(p));
+    while (true) {
+      auto block = block_mgr_.GetBlock(p, len);
+      client.Write(sock_fd, &len, sizeof(len));
+      if (len == -1) {
+        break;
+      }
+      client.Write(sock_fd, block.get(), static_cast<size_t>(len));
+    }
+  }
+  partition_id = -1;
+  client.Write(sock_fd, &partition_id, sizeof(partition_id));
+
+  while (true) {
+    client.Read(sock_fd, &partition_id, sizeof(partition_id));
+    if (partition_id == -1) {
+      break;
+    }
+    while (true) {
+      client.Read(sock_fd, &len, sizeof(len));
+      if (len == -1) {
+        break;
+      }
+      assert(len > 0);
+      std::unique_ptr<char[]> buf(new char[len]);
+      client.Read(sock_fd, buf.get(), static_cast<size_t>(len));
+      block_mgr_.PutBlock(partition_id, len, std::move(buf));
+    }
   }
 
-  if (client.WriteWithHeader(sock_fd, sbuf.data(), sbuf.size()) < 0) {
-    std::cerr << "write failed" << std::endl;
-    return;
-  }
-  free(sbuf.release());
-
-  size_t len = 0;
-  auto rbuf = client.ReadWithHeader(sock_fd, len);
-  if (!rbuf) {
-    std::cerr << "read failed" << std::endl;
-    return;
-  }
-
-  block_mgr_.UnpackBlocks(rbuf.get(), len);
 }
 

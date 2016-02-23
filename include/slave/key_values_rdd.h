@@ -103,7 +103,7 @@ class KeyValuesRDD: public RDD {
   }
 
   virtual void GetBlocks(BlockManager &block_mgr) override {
-    long block_len;
+    int32_t block_len;
     while (true) {
       auto block = block_mgr.GetBlock(partition_id_, block_len);
       if (block_len == -1) {

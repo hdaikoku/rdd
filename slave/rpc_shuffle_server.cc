@@ -13,7 +13,7 @@ void RPCShuffleServer::dispatch(msgpack::rpc::request req) {
       req.params().convert(&params);
 
       int client_id = params.get<0>();
-      long block_len = 0;
+      int32_t block_len = 0;
       auto block = block_mgr_.GetBlock(client_id, block_len);
       std::string header(std::to_string(block_len) + "\r\n");
 

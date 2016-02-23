@@ -85,6 +85,7 @@ rdd_rpc::Response Executor::TextFile(msgpack::rpc::request &req) {
 
   ParseParams(req, rdd_id, n_partitions, filename, indices);
 
+  block_mgr_.reset(new BlockManager(n_partitions));
   for (const auto &index : indices) {
     rdds_[rdd_id].push_back(
         std::unique_ptr<TextFileRDD>(new TextFileRDD(n_partitions, filename, index))
@@ -128,7 +129,7 @@ rdd_rpc::Response Executor::MapWithCombine(msgpack::rpc::request &req) {
 
   auto &rdds = rdds_[rdd_id];
   assert(rdds.size() > 0);
-  block_mgr_.reset(new BlockManager(rdds[0]->GetNumPartitions()));
+
   auto &new_rdds = rdds_[new_rdd_id];
   tbb::parallel_for(
       tbb::blocked_range<int>(0, rdds.size(), 1),
@@ -163,7 +164,6 @@ rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
     }
   }
 
-  block_mgr_.reset(new BlockManager(reducer_ids.size()));
   RPCShuffleServer shuffle_server(*block_mgr_);
   shuffle_server.instance.listen("0.0.0.0", executors_[id_].GetDataPort());
   shuffle_server.instance.start(1);

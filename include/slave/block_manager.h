@@ -11,7 +11,7 @@
 #include <tbb/concurrent_queue.h>
 #include <array>
 
-using Block = std::pair<long, std::unique_ptr<char[]>>;
+using Block = std::pair<int32_t, std::unique_ptr<char[]>>;
 
 class BlockManager {
  public:
@@ -19,17 +19,15 @@ class BlockManager {
   BlockManager(int n_buffers)
       : finalized_(false), n_buffers_(n_buffers), buffers_(n_buffers) { }
 
-  std::unique_ptr<char[]> GetBlock(int buffer_id, long &len);
+  std::unique_ptr<char[]> GetBlock(int buffer_id, int32_t &len);
 
-  void PutBlock(int buffer_id, size_t len, std::unique_ptr<char[]> block);
+  void PutBlock(int buffer_id, int32_t len, std::unique_ptr<char[]> block);
 
-  void PackBlocks(int partition_id, msgpack::sbuffer &sbuf, std::vector<std::unique_ptr<char[]>> &refs);
+//  void PackBlocks(int partition_id, msgpack::sbuffer &sbuf, std::vector<std::unique_ptr<char[]>> &refs);
+//
+//  void UnpackBlocks(const char *buf, int32_t len);
 
-  void UnpackBlocks(const char *buf, size_t len);
-
-  int GetNumBuffers() {
-    return n_buffers_;
-  }
+  int GetNumBuffers() const;
 
   void Finalize();
 

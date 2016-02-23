@@ -2,6 +2,7 @@
 // Created by Harunobu Daikoku on 2016/01/11.
 //
 
+#include <cassert>
 #include <iostream>
 #include "slave/pairwise_shuffle_server.h"
 #include "socket/socket_server.h"
@@ -21,23 +22,36 @@ void PairwiseShuffleServer::Start(const std::vector<int> &partition_ids, int por
     return;
   }
 
-  size_t len = 0;
-  auto rbuf = server.ReadWithHeader(sock_fd, len);
-  if (!rbuf) {
-    std::cerr << "read failed" << std::endl;
-    return;
+  int partition_id;
+  int32_t len = -1;
+  while (true) {
+    server.Read(sock_fd, &partition_id, sizeof(partition_id));
+    if (partition_id == -1) {
+      break;
+    }
+    while (true) {
+      server.Read(sock_fd, &len, sizeof(len));
+      if (len == -1) {
+        break;
+      }
+      assert(len >= 0);
+      std::unique_ptr<char[]> buf(new char[len]);
+      server.Read(sock_fd, buf.get(), static_cast<size_t>(len));
+      block_mgr_.PutBlock(partition_id, len, std::move(buf));
+    }
   }
 
-  block_mgr_.UnpackBlocks(rbuf.get(), len);
-
-  msgpack::sbuffer sbuf;
-  std::vector<std::unique_ptr<char[]>> refs;
   for (const auto &p : partition_ids) {
-    block_mgr_.PackBlocks(p, sbuf, refs);
+    server.Write(sock_fd, &p, sizeof(p));
+    while (true) {
+      auto block = block_mgr_.GetBlock(p, len);
+      server.Write(sock_fd, &len, sizeof(len));
+      if (len == -1) {
+        break;
+      }
+      server.Write(sock_fd, block.get(), static_cast<size_t>(len));
+    }
   }
-
-  if (server.WriteWithHeader(sock_fd, sbuf.data(), sbuf.size()) < 0) {
-    std::cerr << "write failed" << std::endl;
-    return;
-  }
+  partition_id = -1;
+  server.Write(sock_fd, &partition_id, sizeof(partition_id));
 }
