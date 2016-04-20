@@ -10,7 +10,7 @@ set(MASTER_SOURCE_FILES
         ../include/master/text_file_rdd_stub.h text_file_rdd_stub.cc
         ../include/slave_context.h
         ../include/text_file_index.h
-        ../include/rdd_rpc.h)
+        ../include/rdd_rpc.h ../include/shuffle/send_buffer.h)
 
 add_library(RDDMaster STATIC ${MASTER_SOURCE_FILES})
 

@@ -4,12 +4,12 @@
 
 #include <cassert>
 #include <iostream>
-#include "slave/pairwise_shuffle_server.h"
+#include "shuffle/pairwise_shuffle_server.h"
 #include "socket/socket_server.h"
 
 void PairwiseShuffleServer::Start(const std::vector<int> &partition_ids, int port) {
   int sock_fd;
-  SocketServer server(std::to_string(port));
+  SocketServer server(port);
 
   if (!server.Listen()) {
     std::cerr << "listen failed: " << port << std::endl;
@@ -17,7 +17,7 @@ void PairwiseShuffleServer::Start(const std::vector<int> &partition_ids, int por
   }
   std::cout << "listening: " << port << std::endl;
 
-  if ((sock_fd = server.Accept()) < 0) {
+  if ((sock_fd = server.Accept(server.GetListenSocket())) < 0) {
     perror("accept");
     return;
   }

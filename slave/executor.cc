@@ -4,12 +4,12 @@
 
 #include <sstream>
 #include <fstream>
+#include "shuffle/fully_connected_client.h"
+#include "shuffle/fully_connected_server.h"
 #include "text_file_index.h"
 #include "slave/text_file_rdd.h"
-#include "slave/rpc_shuffle_server.h"
-#include "slave/rpc_shuffle_client.h"
-#include "slave/pairwise_shuffle_server.h"
-#include "slave/pairwise_shuffle_client.h"
+#include "shuffle/pairwise_shuffle_server.h"
+#include "shuffle/pairwise_shuffle_client.h"
 #include "slave/executor.h"
 #include "slave/key_values_rdd.h"
 
@@ -79,16 +79,16 @@ rdd_rpc::Response Executor::TextFile(msgpack::rpc::request &req) {
   std::cout << "textfile called" << std::endl;
 
   int rdd_id;
-  int n_partitions;
+  int num_partitions;
   std::string filename;
   std::vector<TextFileIndex> indices;
 
-  ParseParams(req, rdd_id, n_partitions, filename, indices);
+  ParseParams(req, rdd_id, num_partitions, filename, indices);
 
-  block_mgr_.reset(new BlockManager(n_partitions));
+  block_mgr_.reset(new BlockManager(num_partitions));
   for (const auto &index : indices) {
     rdds_[rdd_id].push_back(
-        std::unique_ptr<TextFileRDD>(new TextFileRDD(n_partitions, filename, index))
+        std::unique_ptr<TextFileRDD>(new TextFileRDD(num_partitions, filename, index))
     );
   }
 
@@ -154,21 +154,22 @@ rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
 
   int rdd_id, new_rdd_id;
   std::string dl_mapper, dl_combiner;
-  std::vector<int> reducer_ids;
-  ParseParams(req, rdd_id, dl_mapper, dl_combiner, reducer_ids, new_rdd_id);
+  std::vector<int> owner_ids;
+  std::vector<int> partition_ids;
+  ParseParams(req, rdd_id, dl_mapper, dl_combiner, owner_ids, partition_ids, new_rdd_id);
 
   std::vector<std::pair<std::string, int>> executors;
-  for (const auto &i : reducer_ids) {
+  for (const auto &i : owner_ids) {
     if (i != id_) {
       executors.push_back(std::make_pair(executors_[i].GetAddr(), executors_[i].GetDataPort()));
     }
   }
 
-  RPCShuffleServer shuffle_server(*block_mgr_);
-  shuffle_server.instance.listen("0.0.0.0", executors_[id_].GetDataPort());
-  shuffle_server.instance.start(1);
-  RPCShuffleClient shuffle_client(executors, id_, *block_mgr_);
-  auto client_thread = shuffle_client.Start();
+  int num_clients = owner_ids.size() - 1;
+  FullyConnectedServer shuffle_server(executors_[id_].GetDataPort(), *block_mgr_, num_clients);
+  auto server_thread = shuffle_server.Dispatch();
+  FullyConnectedClient shuffle_client(executors, partition_ids, *block_mgr_);
+  auto client_thread = shuffle_client.Dispatch();
 
   auto &rdds = rdds_[rdd_id];
   auto &new_rdds = rdds_[new_rdd_id];
@@ -188,7 +189,7 @@ rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
   block_mgr_->Finalize();
 
   client_thread.join();
-  shuffle_server.instance.join();
+  server_thread.join();
 
   return rdd_rpc::Response::OK;
 }

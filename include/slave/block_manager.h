@@ -16,8 +16,8 @@ using Block = std::pair<int32_t, std::unique_ptr<char[]>>;
 class BlockManager {
  public:
 
-  BlockManager(int n_buffers)
-      : finalized_(false), n_buffers_(n_buffers), buffers_(n_buffers) { }
+  BlockManager(int num_buffers)
+      : running_(true), num_buffers_(num_buffers), buffers_(num_buffers) { }
 
   std::unique_ptr<char[]> GetBlock(int buffer_id, int32_t &len);
 
@@ -33,8 +33,8 @@ class BlockManager {
 
  protected:
   std::vector<tbb::concurrent_queue<Block>> buffers_;
-  int n_buffers_;
-  bool finalized_;
+  int num_buffers_;
+  bool running_;
 
 };
 

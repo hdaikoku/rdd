@@ -10,7 +10,7 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
   std::vector<msgpack::rpc::future> fs;
   int new_rdd_id = rc_.GetNewRddId();
 
-  for (auto p : partition_ids_) {
+  for (auto p : partitions_by_owner_) {
     rc_.SetTimeout(p.first, 600);
     fs.push_back(rc_.Call("map", p.first, rdd_id_, dl_mapper, new_rdd_id));
   }
@@ -21,7 +21,7 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
     }
   }
 
-  std::unique_ptr<KeyValuesRDDStub> mapped(new KeyValuesRDDStub(rc_, new_rdd_id, partition_ids_));
+  std::unique_ptr<KeyValuesRDDStub> mapped(new KeyValuesRDDStub(rc_, new_rdd_id, partitions_by_owner_));
   mapped->Shuffle();
 
   return std::move(mapped);
@@ -33,12 +33,19 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
   std::vector<msgpack::rpc::future> fs;
   int new_rdd_id = rc_.GetNewRddId();
 
-
-  for (auto p : partition_ids_) {
+  std::vector<int> owners;
+  GetOwners(owners);
+  for (const auto &p : partitions_by_owner_) {
     rc_.SetTimeout(p.first, 600);
     if (overlap) {
-      std::vector<int> owners;
-      fs.push_back(rc_.Call("map_with_shuffle", p.first, rdd_id_, dl_mapper, dl_combiner, owners, new_rdd_id));
+      fs.push_back(rc_.Call("map_with_shuffle",
+                            p.first,
+                            rdd_id_,
+                            dl_mapper,
+                            dl_combiner,
+                            owners,
+                            p.second,
+                            new_rdd_id));
     } else {
       fs.push_back(rc_.Call("map_with_combine", p.first, rdd_id_, dl_mapper, dl_combiner, new_rdd_id));
     }
@@ -51,7 +58,7 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
     }
   }
 
-  std::unique_ptr<KeyValuesRDDStub> mapped(new KeyValuesRDDStub(rc_, new_rdd_id, partition_ids_));
+  std::unique_ptr<KeyValuesRDDStub> mapped(new KeyValuesRDDStub(rc_, new_rdd_id, partitions_by_owner_));
 
   if (!overlap) {
     mapped->Shuffle();

@@ -7,14 +7,13 @@
 #include "text_file_index.h"
 #include "rdd_rpc.h"
 #include "master/rdd_context.h"
-#include "master/text_file_rdd_stub.h"
 
 std::unique_ptr<TextFileRDDStub> TextFileRDDStub::NewInstance(RDDContext &rc, const std::string &filename) {
   std::vector<msgpack::rpc::future> fs;
   std::unordered_map<int, std::vector<TextFileIndex>> indices;
   auto next_dst = 0;
   auto partition_id = 0;
-  auto n_slaves = rc.GetNumSlaves();
+  auto num_slaves = rc.GetNumExecutors();
   // default chunk size: 128 MiB
   auto default_chunk_size = (1 << 27);
 
@@ -29,7 +28,7 @@ std::unique_ptr<TextFileRDDStub> TextFileRDDStub::NewInstance(RDDContext &rc, co
   auto rdd_id = rc.GetNewRddId();
   std::unique_ptr<TextFileRDDStub> rdd(new TextFileRDDStub(rc, rdd_id));
   while (!ifs.eof()) {
-    int owner = next_dst++ % n_slaves;
+    int owner = next_dst++ % num_slaves;
     int64_t offset = ifs.tellg();
 
     if ((filesize - offset) < default_chunk_size) {
@@ -57,7 +56,6 @@ std::unique_ptr<TextFileRDDStub> TextFileRDDStub::NewInstance(RDDContext &rc, co
     fs.push_back(rc.Call("textfile", i.first, rdd_id, partition_id, filename, i.second));
   }
 
-  int i = 0;
   for (auto f : fs) {
     if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
       std::cerr << "Could not send to: " << std::endl;

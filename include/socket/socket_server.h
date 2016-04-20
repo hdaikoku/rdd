@@ -6,20 +6,58 @@
 #define SOCKET_SERVER_CLIENT_SOCKET_SERVER_H
 
 #include <string>
+#include <sys/socket.h>
+#include <netdb.h>
 #include "socket_common.h"
 
 class SocketServer: public SocketCommon {
  public:
 
-  SocketServer(const std::string &server_port) : server_port_(server_port) { }
+  SocketServer(const int server_port) : server_port_(server_port) { }
 
-  bool Listen();
+  bool Listen() {
+    struct addrinfo *result;
 
-  int Accept();
+    result = InitSocket(nullptr, std::to_string(server_port_).c_str(), AI_PASSIVE);
+    if (!result) {
+      return false;
+    }
 
-  virtual bool SetSockOpt() override;
+    if (bind(sock_fd_, result->ai_addr, result->ai_addrlen) == -1) {
+      perror("bind");
+      freeaddrinfo(result);
+      return false;
+    }
+
+    if (listen(sock_fd_, 1024) == -1) {
+      perror("listen");
+      freeaddrinfo(result);
+    }
+
+    freeaddrinfo(result);
+
+    return true;
+  }
+
+  static int Accept(int fd) {
+    return accept(fd, NULL, NULL);
+  }
+
+  virtual bool SetSockOpt() override {
+    if (!SocketCommon::SetSockOpt()) {
+      return false;
+    }
+
+    int val = 1;
+    return (setsockopt(sock_fd_, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(int)) == 0);
+  }
+
+  int GetListenSocket() const {
+    return sock_fd_;
+  }
+
  private:
-  std::string server_port_;
+  int server_port_;
 };
 
 

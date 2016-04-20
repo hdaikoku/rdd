@@ -7,7 +7,7 @@
 
 std::unique_ptr<char[]> BlockManager::GetBlock(int buffer_id, int32_t &len) {
   Block block(0, std::unique_ptr<char[]>(nullptr));
-  if (!buffers_[buffer_id].try_pop(block) && finalized_) {
+  if (!buffers_[buffer_id].try_pop(block) && !running_) {
     block.first = -1;
   }
 
@@ -44,9 +44,9 @@ void BlockManager::UnpackBlocks(int partition_id, const char *buf, size_t len) {
 }
 
 int BlockManager::GetNumBuffers() const {
-  return n_buffers_;
+  return num_buffers_;
 }
 
 void BlockManager::Finalize() {
-  finalized_ = true;
+  running_ = false;
 }

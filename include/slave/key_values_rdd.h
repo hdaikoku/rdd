@@ -93,10 +93,10 @@ class KeyValuesRDD: public RDD {
   virtual void Compute() override { }
 
   virtual void PutBlocks(BlockManager &block_mgr) override {
-    auto n_reducers = block_mgr.GetNumBuffers();
-    std::vector<msgpack::sbuffer> buffers(n_reducers);
+    auto num_partitions = block_mgr.GetNumBuffers();
+    std::vector<msgpack::sbuffer> buffers(num_partitions);
     Pack(buffers);
-    for (int i = 0; i < n_reducers; ++i) {
+    for (int i = 0; i < num_partitions; ++i) {
       block_mgr.PutBlock(i, buffers[i].size(), std::unique_ptr<char[]>(buffers[i].release()));
     }
     key_values_.clear();
@@ -126,10 +126,10 @@ class KeyValuesRDD: public RDD {
   std::unordered_map<K, std::vector<V>> key_values_;
 
   virtual void Pack(std::vector<msgpack::sbuffer> &buffers) const override {
-    auto n_partitions = buffers.size();
+    auto num_partitions = buffers.size();
     auto hasher = key_values_.hash_function();
     for (const auto &kv : key_values_) {
-      auto dest_id = hasher(kv.first) % n_partitions;
+      auto dest_id = hasher(kv.first) % num_partitions;
       msgpack::pack(&buffers[dest_id], kv);
     }
   }

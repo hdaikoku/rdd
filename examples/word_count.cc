@@ -22,7 +22,7 @@ int main(int argc, const char **argv) {
   auto start_mr = chrono::steady_clock::now();
 
   auto start_map = chrono::steady_clock::now();
-  auto mapped = textFile->Map(argv[3], argv[4], false);
+  auto mapped = textFile->Map(argv[3], argv[4], true);
   auto end_map = chrono::steady_clock::now();
 
   auto start_reduce = chrono::steady_clock::now();

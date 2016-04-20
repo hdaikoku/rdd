@@ -89,6 +89,19 @@ class Executor: public msgpack::rpc::dispatcher {
     p5 = params.template get<4>();
   }
 
+  template<typename P1, typename P2, typename P3, typename P4, typename P5, typename P6>
+  void ParseParams(msgpack::rpc::request &req, P1 &p1, P2 &p2, P3 &p3, P4 &p4, P5 &p5, P6 &p6) const {
+    msgpack::type::tuple<P1, P2, P3, P4, P5, P6> params;
+
+    req.params().convert(&params);
+    p1 = params.template get<0>();
+    p2 = params.template get<1>();
+    p3 = params.template get<2>();
+    p4 = params.template get<3>();
+    p5 = params.template get<4>();
+    p6 = params.template get<5>();
+  }
+
 };
 
 

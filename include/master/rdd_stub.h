@@ -17,17 +17,19 @@ class RDDStub {
       : rc_(rc_), rdd_id_(rdd_id_) { }
 
   RDDStub(RDDContext &rc, int rdd_id, const std::unordered_map<int, std::vector<int>> &partition_ids)
-      : rc_(rc), rdd_id_(rdd_id), partition_ids_(partition_ids) { }
+      : rc_(rc), rdd_id_(rdd_id), partitions_by_owner_(partition_ids) { }
 
   void AddPartition(int owner, int partition_id);
 
   void GetPartitionIDsByOwner(int owner, std::vector<int> &partition_ids);
 
+  void GetOwners(std::vector<int> &owners) const;
+
   void Print() const;
 
  protected:
   int rdd_id_;
-  std::unordered_map<int, std::vector<int>> partition_ids_;
+  std::unordered_map<int, std::vector<int>> partitions_by_owner_;
   RDDContext &rc_;
 
 };

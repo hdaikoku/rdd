@@ -8,18 +8,24 @@
 #include "master/rdd_context.h"
 
 void RDDStub::AddPartition(int owner, int partition_id) {
-  partition_ids_[owner].push_back(partition_id);
+  partitions_by_owner_[owner].push_back(partition_id);
 }
 
 void RDDStub::GetPartitionIDsByOwner(int owner, std::vector<int> &partition_ids) {
-  auto ids = partition_ids_[owner];
+  auto ids = partitions_by_owner_[owner];
   partition_ids.insert(partition_ids.begin(), ids.begin(), ids.end());
+}
+
+void RDDStub::GetOwners(std::vector<int> &owners) const {
+  for (const auto &p : partitions_by_owner_) {
+    owners.push_back(p.first);
+  }
 }
 
 void RDDStub::Print() const {
   std::vector<msgpack::rpc::future> fs;
 
-  for (auto p : partition_ids_) {
+  for (auto p : partitions_by_owner_) {
     fs.push_back(rc_.Call("print", p.first, rdd_id_));
   }
 

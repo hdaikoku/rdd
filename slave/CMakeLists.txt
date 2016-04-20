@@ -7,14 +7,16 @@ set(SLAVE_SOURCE_FILES
         ../include/slave/rdd.h rdd.cc
         ../include/slave/key_value_rdd.h
         ../include/slave/key_values_rdd.h
+        ../include/slave/text_file_rdd.h
         ../include/slave/block_manager.h block_manager.cc
-        ../socket/socket_common.cc
-        ../socket/socket_server.cc
-        ../socket/socket_client.cc
-        ../include/slave/rpc_shuffle_server.h rpc_shuffle_server.cc
-        ../include/slave/rpc_shuffle_client.h rpc_shuffle_client.cc
-        ../include/slave/pairwise_shuffle_server.h pairwise_shuffle_server.cc
-        ../include/slave/pairwise_shuffle_client.h pairwise_shuffle_client.cc ../include/slave/text_file_rdd.h)
+        ../include/socket/socket_common.h
+        ../include/socket/socket_client.h
+        ../include/socket/socket_server.h
+        ../include/socket/non_blocking_server.h
+        ../include/shuffle/fully_connected_client.h ../shuffle/fully_connected_client.cc
+        ../include/shuffle/fully_connected_server.h ../shuffle/fully_connected_server.cc
+        ../include/shuffle/pairwise_shuffle_server.h ../shuffle/pairwise_shuffle_server.cc
+        ../include/shuffle/pairwise_shuffle_client.h ../shuffle/pairwise_shuffle_client.cc)
 
 add_executable(RDDSlave ${SLAVE_SOURCE_FILES})
 
