@@ -5,22 +5,54 @@
 #ifndef RDMA_SERVER_CLIENT_RDMA_SERVER_H
 #define RDMA_SERVER_CLIENT_RDMA_SERVER_H
 
-#include <string>
 #include "rdma_common.h"
 
 class RDMAServer: public RDMACommon {
  public:
 
-  RDMAServer(const std::string &server_port) : server_port_(server_port) { }
+  RDMAServer(int server_port) : server_port_(server_port) { }
 
-  bool Listen();
+  bool Listen() {
+    auto result = InitSocket(nullptr, std::to_string(server_port_).c_str(), AI_PASSIVE);
+    if (!result) {
+      return false;
+    }
 
-  int Accept();
+    if (rbind(sock_fd_, result->ai_src_addr, result->ai_src_len) == -1) {
+      perror("rbind");
+      rdma_freeaddrinfo(result);
+      return false;
+    }
 
-  virtual bool SetSockOpt() override;
+    if (rlisten(sock_fd_, 1024) == -1) {
+      perror("rlisten");
+      rdma_freeaddrinfo(result);
+    }
+
+    rdma_freeaddrinfo(result);
+
+    return true;
+  }
+
+  int Accept(int fd) {
+    return raccept(fd, NULL, NULL);
+  }
+
+  virtual bool SetSockOpt() override {
+    if (!RDMACommon::SetSockOpt()) {
+      return false;
+    }
+
+    int val = 1;
+    return (rsetsockopt(sock_fd_, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(int)) == 0);
+  }
+
+  int GetListenSocket() const {
+    return sock_fd_;
+  }
 
  private:
-  std::string server_port_;
+  int server_port_;
 };
 
 

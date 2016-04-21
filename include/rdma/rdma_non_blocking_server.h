@@ -1,24 +1,23 @@
 //
-// Created by Harunobu Daikoku on 2016/04/08.
+// Created by hdaikoku on 16/04/21.
 //
 
-#ifndef FULLY_CONNECTED_POLL_NON_BLOCKING_SERVER_H
-#define FULLY_CONNECTED_POLL_NON_BLOCKING_SERVER_H
+#ifndef PROJECT_RDMA_NON_BLOCKING_SERVER_H
+#define PROJECT_RDMA_NON_BLOCKING_SERVER_H
 
 #include <algorithm>
 #include <vector>
-#include <thread>
 #include <unordered_map>
 #include <poll.h>
 #include <queue>
 #include "shuffle/send_buffer.h"
-#include "socket/socket_server.h"
+#include "rdma_server.h"
 
-class NonBlockingServer: public SocketServer {
+class RDMANonBlockingServer: public RDMAServer {
 
  public:
-  NonBlockingServer(const int server_port)
-      : SocketServer(server_port) { }
+  RDMANonBlockingServer(const int server_port)
+      : RDMAServer(server_port) { }
 
  protected:
   virtual bool OnRecv(struct pollfd &pfd) = 0;
@@ -43,7 +42,7 @@ class NonBlockingServer: public SocketServer {
       }
 
       // default timeout: 3 mins
-      auto rc = poll(fds.data(), fds.size(), 3 * 60 * 1000);
+      auto rc = rpoll(fds.data(), fds.size(), 3 * 60 * 1000);
       if (rc < 0) {
         perror("poll");
         break;
@@ -62,7 +61,7 @@ class NonBlockingServer: public SocketServer {
         auto revents = fds[i].revents;
         if (revents & POLLHUP) {
           // connection has been closed
-          close(fds[i].fd);
+          rclose(fds[i].fd);
           fds[i].fd = -1;
           continue;
         }
@@ -95,7 +94,7 @@ class NonBlockingServer: public SocketServer {
           }
           if (revents & POLLIN) {
             if (!OnRecv(fds[i])) {
-              close(fds[i].fd);
+              rclose(fds[i].fd);
               fds[i].fd = -1;
             }
           }
@@ -118,7 +117,7 @@ class NonBlockingServer: public SocketServer {
 
   void Break() {
     for (auto &fd : fds) {
-      close(fd.fd);
+      rclose(fd.fd);
       fd.fd = -1;
     }
   }
@@ -139,4 +138,4 @@ class NonBlockingServer: public SocketServer {
 
 };
 
-#endif //FULLY_CONNECTED_POLL_NON_BLOCKING_SERVER_H
+#endif //PROJECT_RDMA_NON_BLOCKING_SERVER_H

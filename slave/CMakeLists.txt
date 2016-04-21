@@ -12,7 +12,7 @@ set(SLAVE_SOURCE_FILES
         ../include/socket/socket_common.h
         ../include/socket/socket_client.h
         ../include/socket/socket_server.h
-        ../include/socket/non_blocking_server.h
+        ../include/socket/socket_non_blocking_server.h
         ../include/shuffle/fully_connected_client.h ../shuffle/fully_connected_client.cc
         ../include/shuffle/fully_connected_server.h ../shuffle/fully_connected_server.cc
         ../include/shuffle/pairwise_shuffle_server.h ../shuffle/pairwise_shuffle_server.cc
@@ -20,4 +20,4 @@ set(SLAVE_SOURCE_FILES
 
 add_executable(RDDSlave ${SLAVE_SOURCE_FILES})
 
-target_link_libraries(RDDSlave msgpack jubatus_mpio jubatus_msgpack-rpc dl tbb)
+target_link_libraries(RDDSlave msgpack jubatus_mpio jubatus_msgpack-rpc dl tbb pthread)

@@ -11,7 +11,7 @@
 
 class SocketClient: public SocketCommon {
  public:
-  SocketClient(const std::string &server_addr, const int server_port)
+  SocketClient(const std::string &server_addr, int server_port)
       : server_addr_(server_addr), server_port_(server_port) { }
 
   int Connect() {

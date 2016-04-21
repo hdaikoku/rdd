@@ -13,7 +13,7 @@
 class SocketServer: public SocketCommon {
  public:
 
-  SocketServer(const int server_port) : server_port_(server_port) { }
+  SocketServer(int server_port) : server_port_(server_port) { }
 
   bool Listen() {
     struct addrinfo *result;

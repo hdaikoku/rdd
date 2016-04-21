@@ -5,13 +5,14 @@
 #ifndef FULLY_CONNECTED_FULLY_CONNECTED_H
 #define FULLY_CONNECTED_FULLY_CONNECTED_H
 
+#include <thread>
 #include "slave/block_manager.h"
-#include "socket/non_blocking_server.h"
+#include "socket/socket_non_blocking_server.h"
 
-class FullyConnectedServer: public NonBlockingServer {
+class FullyConnectedServer: public SocketNonBlockingServer {
  public:
   FullyConnectedServer(const int server_port, BlockManager &block_mgr, int num_clients)
-      : NonBlockingServer(server_port), block_mgr_(block_mgr),
+      : SocketNonBlockingServer(server_port), block_mgr_(block_mgr),
         num_clients_(num_clients), num_completed_(0) { }
 
   std::thread Dispatch() {

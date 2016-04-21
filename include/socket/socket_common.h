@@ -5,6 +5,7 @@
 #ifndef SOCKET_SERVER_CLIENT_SOCKET_SOCKET_H
 #define SOCKET_SERVER_CLIENT_SOCKET_SOCKET_H
 
+#include <cstring>
 #include <iostream>
 #include <fcntl.h>
 #include <memory>
@@ -18,6 +19,7 @@
 
 class SocketCommon {
  public:
+
   virtual ~SocketCommon() {
     close(sock_fd_);
   }
@@ -25,7 +27,7 @@ class SocketCommon {
   struct addrinfo *InitSocket(const char *addr, const char *port, int flags) {
     struct addrinfo hints, *result;
 
-    memset(&hints, 0, sizeof(struct addrinfo));
+    std::memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_INET;
     hints.ai_flags = flags;
 

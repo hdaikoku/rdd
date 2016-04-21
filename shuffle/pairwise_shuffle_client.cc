@@ -11,7 +11,6 @@ void PairwiseShuffleClient::Start(const std::vector<int> &partition_ids,
                                   const std::string &server_addr,
                                   int server_port) {
   SocketClient client(server_addr, server_port);
-  std::cout << "connecting to " << server_addr << ":" << server_port << std::endl;
 
   if (client.Connect() < 0) {
     std::cerr << "could not connect to: " << server_addr << ":" << server_port << std::endl;
