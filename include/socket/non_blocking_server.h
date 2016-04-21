@@ -10,8 +10,8 @@
 #include <thread>
 #include <unordered_map>
 #include <poll.h>
-#include <shuffle/send_buffer.h>
 #include <queue>
+#include "shuffle/send_buffer.h"
 #include "socket/socket_server.h"
 
 class NonBlockingServer: public SocketServer {
@@ -62,7 +62,6 @@ class NonBlockingServer: public SocketServer {
         auto revents = fds[i].revents;
         if (revents & POLLHUP) {
           // connection has been closed
-          std::cout << "connection has been closed" << std::endl;
           close(fds[i].fd);
           fds[i].fd = -1;
           continue;
@@ -84,7 +83,7 @@ class NonBlockingServer: public SocketServer {
             fds.emplace_back(pollfd{new_fd, POLLIN, 0});
           }
         } else {
-          // TODO: error handling
+          // connected file descriptor is ready
           if (revents & POLLOUT) {
             if (OnSend(fds[i], send_queues_[fds[i].fd].front())) {
               auto buf = std::move(send_queues_[fds[i].fd].front());

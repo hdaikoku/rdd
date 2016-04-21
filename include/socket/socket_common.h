@@ -77,7 +77,6 @@ class SocketCommon {
       if (sent < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
           // send buffer is full
-          std::cerr << "buffer is full" << std::endl;
           break;
         }
         // some errors
