@@ -21,9 +21,7 @@ bool FullyConnectedServer::OnRecv(struct pollfd &pfd) {
   if (recvd == sizeof(int)) {
     if (partition_id == -1) {
       num_completed_++;
-      SendBuffer header(&partition_id, sizeof(partition_id));
-      ScheduleSend(pfd, std::move(header));
-      return true;
+      return false;
     }
     int32_t len;
     auto block = block_mgr_.GetBlock(partition_id, len);
