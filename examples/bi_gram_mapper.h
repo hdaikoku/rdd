@@ -12,17 +12,10 @@ class BiGramMapper:
 
  public:
 
-  virtual void Map(std::unordered_map<std::string, std::vector<int>, tbb::tbb_hash<std::string>> &kvs,
-                   const long long int &key,
-                   const std::string &value) override;
-
-  virtual void
-      Map(std::unordered_map<std::string, std::vector<int>> &kvs, const long long int &key, const std::string &value)
-      override;
-
-  virtual void Map
-      (google::dense_hash_map<std::string, std::vector<int>> &kvs, const long long int &key, const std::string &value)
-      override;
+  virtual void Map(
+      google::dense_hash_map<std::string, std::vector<int>> &kvs,
+      const long long int &key,
+      const std::string &value) override;
 
 };
 
