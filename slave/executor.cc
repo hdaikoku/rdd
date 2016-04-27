@@ -120,6 +120,7 @@ rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
         }
       }
   );
+  block_mgr_->Finalize();
 
   return rdd_rpc::Response::OK;
 }
@@ -249,7 +250,7 @@ rdd_rpc::Response Executor::Reduce(msgpack::rpc::request &req) {
 }
 
 rdd_rpc::Response Executor::GroupBy(msgpack::rpc::request &req) {
-  std::cout << "reduce called" << std::endl;
+  std::cout << "groupby called" << std::endl;
 
   int rdd_id;
   ParseParams(req, rdd_id);
