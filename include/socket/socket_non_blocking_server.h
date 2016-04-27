@@ -22,6 +22,7 @@ class SocketNonBlockingServer: public SocketServer {
  protected:
   virtual bool OnRecv(struct pollfd &pfd) = 0;
   virtual bool OnSend(struct pollfd &pfd, SendBuffer &send_buffer) = 0;
+  virtual bool OnClose(struct pollfd &pfd) = 0;
   virtual bool IsRunning() = 0;
 
   void ScheduleSend(struct pollfd &pfd, SendBuffer &&buffer) {
@@ -59,8 +60,9 @@ class SocketNonBlockingServer: public SocketServer {
         }
 
         auto revents = fds[i].revents;
-        if (revents & POLLHUP) {
+        if (revents & (POLLHUP | POLLHUP)) {
           // connection has been closed
+          OnClose(fds[i]);
           close(fds[i].fd);
           fds[i].fd = -1;
           continue;

@@ -20,4 +20,4 @@ set(SLAVE_SOURCE_FILES
 
 add_executable(RDDSlave ${SLAVE_SOURCE_FILES})
 
-target_link_libraries(RDDSlave msgpack jubatus_mpio jubatus_msgpack-rpc dl tbb pthread)
+target_link_libraries(RDDSlave msgpack jubatus_mpio jubatus_msgpack-rpc dl tbb)

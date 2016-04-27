@@ -24,6 +24,7 @@ class FullyConnectedServer: public SocketNonBlockingServer {
  protected:
   virtual bool OnRecv(struct pollfd &pfd) override;
   virtual bool OnSend(struct pollfd &pfd, SendBuffer &send_buffer) override;
+  virtual bool OnClose(struct pollfd &pfd) override;
   virtual bool IsRunning() override;
 
 

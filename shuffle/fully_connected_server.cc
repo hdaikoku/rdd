@@ -19,10 +19,6 @@ bool FullyConnectedServer::OnRecv(struct pollfd &pfd) {
   }
 
   if (recvd == sizeof(int)) {
-    if (partition_id == -1) {
-      num_completed_++;
-      return false;
-    }
     int32_t len;
     auto block = block_mgr_.GetBlock(partition_id, len);
 
@@ -49,6 +45,11 @@ bool FullyConnectedServer::OnSend(struct pollfd &pfd, SendBuffer &send_buffer) {
   send_buffer.Consumed(sent);
 
   return (sent == size);
+}
+
+bool FullyConnectedServer::OnClose(struct pollfd &pfd) {
+  num_completed_++;
+  return true;
 }
 
 bool FullyConnectedServer::IsRunning() {

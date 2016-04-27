@@ -22,6 +22,7 @@ class RDMANonBlockingServer: public RDMAServer {
  protected:
   virtual bool OnRecv(struct pollfd &pfd) = 0;
   virtual bool OnSend(struct pollfd &pfd, SendBuffer &send_buffer) = 0;
+  virtual bool OnClose(struct pollfd &pfd) = 0;
   virtual bool IsRunning() = 0;
 
   void ScheduleSend(struct pollfd &pfd, SendBuffer &&buffer) {
@@ -59,8 +60,9 @@ class RDMANonBlockingServer: public RDMAServer {
         }
 
         auto revents = fds[i].revents;
-        if (revents & POLLHUP) {
+        if (revents & (POLLHUP | POLLERR)) {
           // connection has been closed
+          OnClose(fds[i]);
           rclose(fds[i].fd);
           fds[i].fd = -1;
           continue;

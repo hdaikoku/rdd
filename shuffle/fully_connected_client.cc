@@ -46,8 +46,6 @@ void FullyConnectedClient::Run() {
       }
 
       if (close_conn) {
-        int closing = -1;
-        client->Write(&closing, sizeof(closing));
         client.reset();
       }
     }

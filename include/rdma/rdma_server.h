@@ -13,7 +13,7 @@ class RDMAServer: public RDMACommon {
   RDMAServer(int server_port) : server_port_(server_port) { }
 
   bool Listen() {
-    auto result = InitSocket(nullptr, std::to_string(server_port_).c_str(), AI_PASSIVE);
+    auto result = InitSocket(nullptr, std::to_string(server_port_).c_str(), RAI_PASSIVE);
     if (!result) {
       return false;
     }
