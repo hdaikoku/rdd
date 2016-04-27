@@ -6,16 +6,31 @@
 #include <jubatus/msgpack/rpc/future.h>
 #include "master/rdd_context.h"
 
+void KeyValuesRDDStub::GroupBy() {
+  std::vector<msgpack::rpc::future> fs;
+
+  for (const auto &p : partitions_by_owner_) {
+    rc_.SetTimeout(p.first, 600);
+    fs.push_back(rc_.Call("group_by", p.first, rdd_id_));
+  }
+
+  for (auto &f : fs) {
+    if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
+      return;
+    }
+  }
+}
+
 std::unique_ptr<KeyValueRDDStub> KeyValuesRDDStub::Reduce(const std::string &dl_filename) {
   std::vector<msgpack::rpc::future> fs;
   int new_rdd_id = rc_.GetNewRddId();
 
-  for (auto p : partitions_by_owner_) {
+  for (const auto &p : partitions_by_owner_) {
     rc_.SetTimeout(p.first, 600);
     fs.push_back(rc_.Call("reduce", p.first, rdd_id_, dl_filename, new_rdd_id));
   }
 
-  for (auto f : fs) {
+  for (auto &f : fs) {
     if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
       return nullptr;
     }
@@ -32,7 +47,7 @@ bool KeyValuesRDDStub::Shuffle() {
   int num_steps = partitions_by_owner_.size();
 
   for (int step = 1; step < num_steps; step++) {
-    for (auto p : partitions_by_owner_) {
+    for (const auto &p : partitions_by_owner_) {
       int dest = p.first ^step;
       std::vector<int> partition_ids;
       GetPartitionIDsByOwner(dest, partition_ids);
@@ -47,7 +62,7 @@ bool KeyValuesRDDStub::Shuffle() {
       }
     }
 
-    for (auto f : fs) {
+    for (auto &f : fs) {
       if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
         ret = false;
         std::cerr << "oops" << std::endl;

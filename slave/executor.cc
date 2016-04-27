@@ -50,6 +50,10 @@ void Executor::dispatch(msgpack::rpc::request req) {
       // reduce
       req.result(Reduce(req));
 
+    } else if (method == "group_by") {
+      // groupBy
+      req.result(GroupBy(req));
+
     } else if (method == "print") {
       // print key-values
       req.result(Print(req));
@@ -237,6 +241,27 @@ rdd_rpc::Response Executor::Reduce(msgpack::rpc::request &req) {
           auto rdd = static_cast<KeyValuesRDD<std::string, int> *>(rdds[i].get());
           rdd->GetBlocks(*block_mgr_);
           new_rdds.push_back(rdd->Reduce<std::string, int>(dl_filename));
+        }
+      }
+  );
+
+  return rdd_rpc::Response::OK;
+}
+
+rdd_rpc::Response Executor::GroupBy(msgpack::rpc::request &req) {
+  std::cout << "reduce called" << std::endl;
+
+  int rdd_id;
+  ParseParams(req, rdd_id);
+
+  auto &rdds = rdds_[rdd_id];
+  tbb::parallel_for(
+      tbb::blocked_range<int>(0, rdds.size(), 1),
+      [&](tbb::blocked_range<int> &range) {
+        for (int i = range.begin(); i < range.end(); i++) {
+          // TODO dirty hack :)
+          auto rdd = static_cast<KeyValuesRDD<std::string, int> *>(rdds[i].get());
+          rdd->GetBlocks(*block_mgr_);
         }
       }
   );

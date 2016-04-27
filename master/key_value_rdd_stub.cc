@@ -10,12 +10,12 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
   std::vector<msgpack::rpc::future> fs;
   int new_rdd_id = rc_.GetNewRddId();
 
-  for (auto p : partitions_by_owner_) {
+  for (const auto &p : partitions_by_owner_) {
     rc_.SetTimeout(p.first, 600);
     fs.push_back(rc_.Call("map", p.first, rdd_id_, dl_mapper, new_rdd_id));
   }
 
-  for (auto f : fs) {
+  for (auto &f : fs) {
     if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
       return nullptr;
     }
@@ -52,7 +52,7 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
 
   }
 
-  for (auto f : fs) {
+  for (auto &f : fs) {
     if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
       return nullptr;
     }

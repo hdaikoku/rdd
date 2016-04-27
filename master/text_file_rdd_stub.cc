@@ -56,7 +56,7 @@ std::unique_ptr<TextFileRDDStub> TextFileRDDStub::NewInstance(RDDContext &rc, co
     fs.push_back(rc.Call("textfile", i.first, rdd_id, partition_id, filename, i.second));
   }
 
-  for (auto f : fs) {
+  for (auto &f : fs) {
     if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
       std::cerr << "Could not send to: " << std::endl;
       // TODO: re-distribute failed index
