@@ -31,8 +31,9 @@ class Executor: public msgpack::rpc::dispatcher {
   rdd_rpc::Response Hello(msgpack::rpc::request &req);
   rdd_rpc::Response TextFile(msgpack::rpc::request &req);
   rdd_rpc::Response Map(msgpack::rpc::request &req);
-  rdd_rpc::Response MapWithCombine(msgpack::rpc::request &req);
   rdd_rpc::Response MapWithShuffle(msgpack::rpc::request &req);
+  rdd_rpc::Response MapWithCombine(msgpack::rpc::request &req);
+  rdd_rpc::Response MapWithCombineShuffle(msgpack::rpc::request &req);
   rdd_rpc::Response ShuffleSrv(msgpack::rpc::request &req);
   rdd_rpc::Response ShuffleCli(msgpack::rpc::request &req);
   rdd_rpc::Response Reduce(msgpack::rpc::request &req);

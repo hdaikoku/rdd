@@ -6,13 +6,19 @@
 #include "rdd_rpc.h"
 #include "master/rdd_context.h"
 
-std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_mapper) {
+std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_mapper, bool overlap) {
   std::vector<msgpack::rpc::future> fs;
   int new_rdd_id = rc_.GetNewRddId();
+  std::vector<int> owners;
+  GetOwners(owners);
 
   for (const auto &p : partitions_by_owner_) {
     rc_.SetTimeout(p.first, 600);
-    fs.push_back(rc_.Call("map", p.first, rdd_id_, dl_mapper, new_rdd_id));
+    if (overlap) {
+      fs.push_back(rc_.Call("map_with_shuffle", p.first, rdd_id_, dl_mapper, owners, p.second, new_rdd_id));
+    } else {
+      fs.push_back(rc_.Call("map", p.first, rdd_id_, dl_mapper, new_rdd_id));
+    }
   }
 
   for (auto &f : fs) {
@@ -22,7 +28,10 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
   }
 
   std::unique_ptr<KeyValuesRDDStub> mapped(new KeyValuesRDDStub(rc_, new_rdd_id, partitions_by_owner_));
-  mapped->Shuffle();
+
+  if (!overlap) {
+    mapped->Shuffle();
+  }
 
   return std::move(mapped);
 }
@@ -32,13 +41,13 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
                                                        bool overlap) {
   std::vector<msgpack::rpc::future> fs;
   int new_rdd_id = rc_.GetNewRddId();
-
   std::vector<int> owners;
   GetOwners(owners);
+
   for (const auto &p : partitions_by_owner_) {
     rc_.SetTimeout(p.first, 600);
     if (overlap) {
-      fs.push_back(rc_.Call("map_with_shuffle",
+      fs.push_back(rc_.Call("map_with_combine_shuffle",
                             p.first,
                             rdd_id_,
                             dl_mapper,

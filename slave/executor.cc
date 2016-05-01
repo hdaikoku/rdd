@@ -30,13 +30,17 @@ void Executor::dispatch(msgpack::rpc::request req) {
       // Map specified RDD
       req.result(Map(req));
 
+    } else if (method == "map_with_shuffle") {
+      // Map overlapped by shuffle
+      req.result(MapWithShuffle(req));
+
     } else if (method == "map_with_combine") {
       // Map with in-mapper combining
       req.result(MapWithCombine(req));
 
-    } else if (method == "map_with_shuffle") {
+    } else if (method == "map_with_combine_shuffle") {
       // Map overlapped by shuffle
-      req.result(MapWithShuffle(req));
+      req.result(MapWithCombineShuffle(req));
 
     } else if (method == "shuffle_srv") {
       // shuffle, act as a server
@@ -125,6 +129,50 @@ rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
   return rdd_rpc::Response::OK;
 }
 
+rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
+  std::cout << "map with shuffle called" << std::endl;
+
+  int rdd_id, new_rdd_id;
+  std::string dl_mapper;
+  std::vector<int> owner_ids;
+  std::vector<int> partition_ids;
+  ParseParams(req, rdd_id, dl_mapper, owner_ids, partition_ids, new_rdd_id);
+
+  std::vector<std::pair<std::string, int>> executors;
+  for (const auto &i : owner_ids) {
+    if (i != id_) {
+      executors.push_back(std::make_pair(executors_[i].GetAddr(), executors_[i].GetDataPort()));
+    }
+  }
+
+  int num_clients = owner_ids.size() - 1;
+  FullyConnectedServer shuffle_server(executors_[id_].GetDataPort(), *block_mgr_, num_clients);
+  auto server_thread = shuffle_server.Dispatch();
+  FullyConnectedClient shuffle_client(executors, partition_ids, *block_mgr_);
+  auto client_thread = shuffle_client.Dispatch();
+
+  auto &rdds = rdds_[rdd_id];
+  auto &new_rdds = rdds_[new_rdd_id];
+  tbb::parallel_for(
+      tbb::blocked_range<int>(0, rdds.size(), 1),
+      [&](tbb::blocked_range<int> &range) {
+        for (int i = range.begin(); i < range.end(); i++) {
+          // TODO dirty hack :)
+          auto new_rdd = static_cast<TextFileRDD *>(rdds[i].get())
+              ->Map<std::string, int>(dl_mapper);
+          new_rdd->PutBlocks(*block_mgr_);
+          new_rdds.push_back(std::move(new_rdd));
+        }
+      }
+  );
+  block_mgr_->Finalize();
+
+  client_thread.join();
+  server_thread.join();
+
+  return rdd_rpc::Response::OK;
+}
+
 rdd_rpc::Response Executor::MapWithCombine(msgpack::rpc::request &req) {
   std::cout << "map with combine called" << std::endl;
 
@@ -154,8 +202,8 @@ rdd_rpc::Response Executor::MapWithCombine(msgpack::rpc::request &req) {
   return rdd_rpc::Response::OK;
 }
 
-rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
-  std::cout << "map with shuffle called" << std::endl;
+rdd_rpc::Response Executor::MapWithCombineShuffle(msgpack::rpc::request &req) {
+  std::cout << "map with combine/shuffle called" << std::endl;
 
   int rdd_id, new_rdd_id;
   std::string dl_mapper, dl_combiner;
