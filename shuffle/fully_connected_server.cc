@@ -13,8 +13,12 @@ bool FullyConnectedServer::OnRecv(struct pollfd &pfd) {
     if (recvd == CONNECTION_ERROR) {
       // error
       std::cerr << "SERVER: ERROR" << std::endl;
+      // TODO: might be better to close all connections
+      //  Break();
+    } else if (recvd == CONNECTION_CLOSED) {
+      // TODO: do something
     }
-    Break();
+
     return false;
   }
 

@@ -35,7 +35,7 @@ class SocketNonBlockingServer: public SocketServer {
     auto listen_fd = GetListenSocket();
     SetNonBlocking(listen_fd);
 
-    fds.emplace_back(pollfd{listen_fd, POLLIN | POLLHUP, 0});
+    fds.emplace_back(pollfd{listen_fd, POLLIN | POLLHUP | POLLERR, 0});
 
     while (fds.size() > 0) {
       if (!IsRunning() && EmptyQueues()) {
@@ -60,7 +60,7 @@ class SocketNonBlockingServer: public SocketServer {
         }
 
         auto revents = fds[i].revents;
-        if (revents & (POLLHUP | POLLHUP)) {
+        if (revents & (POLLHUP | POLLERR)) {
           // connection has been closed
           OnClose(fds[i]);
           close(fds[i].fd);
@@ -96,6 +96,7 @@ class SocketNonBlockingServer: public SocketServer {
           }
           if (revents & POLLIN) {
             if (!OnRecv(fds[i])) {
+              OnClose(fds[i]);
               close(fds[i].fd);
               fds[i].fd = -1;
             }

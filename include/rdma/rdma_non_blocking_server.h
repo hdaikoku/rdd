@@ -96,6 +96,7 @@ class RDMANonBlockingServer: public RDMAServer {
           }
           if (revents & POLLIN) {
             if (!OnRecv(fds[i])) {
+              OnClose(fds[i]);
               rclose(fds[i].fd);
               fds[i].fd = -1;
             }
