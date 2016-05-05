@@ -35,6 +35,8 @@ class FullyConnectedClient {
   }
 
  private:
+  static const int kMinBackoff = 1;
+  static const int kMaxBackoff = 1024;
   std::vector<std::unique_ptr<SocketClient>> clients_;
   std::vector<int> partition_ids_;
   BlockManager &block_mgr_;
