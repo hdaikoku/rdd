@@ -13,6 +13,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <poll.h>
+#include <queue>
 #include <msgpack/sbuffer.hpp>
 #include "slave/block_manager.h"
 #include "socket/socket_client.h"
@@ -22,9 +23,12 @@ class FullyConnectedClient {
   FullyConnectedClient(const std::vector<std::pair<std::string, int>> &servers,
                        const std::vector<int> partition_ids,
                        BlockManager &block_mgr)
-      : partition_ids_(partition_ids), block_mgr_(block_mgr) {
+      : block_mgr_(block_mgr) {
     for (const auto &server : servers) {
       clients_.emplace_back(new SocketClient(server.first, server.second));
+    }
+    for (const auto &p : partition_ids) {
+      partition_ids_.push(p);
     }
   }
 
@@ -38,7 +42,7 @@ class FullyConnectedClient {
   static const int kMinBackoff = 1;
   static const int kMaxBackoff = 1024;
   std::vector<std::unique_ptr<SocketClient>> clients_;
-  std::vector<int> partition_ids_;
+  std::queue<int> partition_ids_;
   BlockManager &block_mgr_;
 
   void Run();

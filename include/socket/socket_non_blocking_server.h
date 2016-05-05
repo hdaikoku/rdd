@@ -38,6 +38,7 @@ class SocketNonBlockingServer: public SocketServer {
     fds.emplace_back(pollfd{listen_fd, POLLIN | POLLHUP | POLLERR, 0});
 
     while (fds.size() > 0) {
+      bool cleanup = false;
       if (!IsRunning() && EmptyQueues()) {
         break;
       }
@@ -65,6 +66,7 @@ class SocketNonBlockingServer: public SocketServer {
           OnClose(fds[i]);
           close(fds[i].fd);
           fds[i].fd = -1;
+          cleanup = true;
           continue;
         }
 
@@ -99,6 +101,7 @@ class SocketNonBlockingServer: public SocketServer {
               OnClose(fds[i]);
               close(fds[i].fd);
               fds[i].fd = -1;
+              cleanup = true;
             }
           }
         }
@@ -106,13 +109,15 @@ class SocketNonBlockingServer: public SocketServer {
         fds[i].revents = 0;
       }
 
-      fds.erase(std::remove_if(fds.begin(),
-                               fds.end(),
-                               [](const struct pollfd &fd) {
-                                 return fd.fd == -1;
-                               }),
-                fds.end()
-      );
+      if (cleanup) {
+        fds.erase(std::remove_if(fds.begin(),
+                                 fds.end(),
+                                 [](const struct pollfd &fd) {
+                                   return fd.fd == -1;
+                                 }),
+                  fds.end()
+        );
+      }
     }
 
     return true;

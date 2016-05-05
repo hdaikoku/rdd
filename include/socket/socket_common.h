@@ -24,6 +24,10 @@ class SocketCommon {
     close(sock_fd_);
   }
 
+  int GetSockFd() const {
+    return sock_fd_;
+  }
+
   struct addrinfo *InitSocket(const char *addr, const char *port, int flags) {
     struct addrinfo hints, *result;
 
