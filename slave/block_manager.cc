@@ -55,15 +55,17 @@ int BlockManager::GroupPackBlocks(std::vector<int> &partition_ids,
       if (len == -1) {
         num_no_more++;
         break;
-      } else if (len > 0) {
+      } else if (len == 0) {
+        break;
+      } else {
         msgpack::pack(&sbuf, msgpack::type::raw_ref(block.get(), len));
         refs.push_back(std::move(block));
       }
     }
   }
 
-  if ((num_no_more == partition_ids.size()) && refs.size() == 0) {
-    return -1;
+  if (refs.size() == 0) {
+    return (num_no_more == partition_ids.size()) ? -1 : 0;
   }
 
   return sbuf.size();
