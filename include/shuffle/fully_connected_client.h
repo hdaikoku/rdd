@@ -21,14 +21,11 @@
 class FullyConnectedClient {
  public:
   FullyConnectedClient(const std::vector<std::pair<std::string, int>> &servers,
-                       const std::vector<int> partition_ids,
+                       int my_owner_id,
                        BlockManager &block_mgr)
-      : block_mgr_(block_mgr) {
+      : my_owner_id_(my_owner_id), block_mgr_(block_mgr) {
     for (const auto &server : servers) {
       clients_.emplace_back(new SocketClient(server.first, server.second));
-    }
-    for (const auto &p : partition_ids) {
-      partition_ids_.push(p);
     }
   }
 
@@ -41,8 +38,8 @@ class FullyConnectedClient {
  private:
   static const int kMinBackoff = 1;
   static const int kMaxBackoff = 1024;
+  int my_owner_id_;
   std::vector<std::unique_ptr<SocketClient>> clients_;
-  std::queue<int> partition_ids_;
   BlockManager &block_mgr_;
 
   void Run();

@@ -7,14 +7,14 @@
 bool FullyConnectedServer::OnRecv(struct pollfd &pfd) {
   auto fd = pfd.fd;
 
-  int partition_id;
-  auto recvd = ReadSome(fd, &partition_id, sizeof(partition_id));
+  int owner_id;
+  auto recvd = ReadSome(fd, &owner_id, sizeof(owner_id));
   if (recvd < 0) {
     if (recvd == CONNECTION_ERROR) {
       // error
       std::cerr << "SERVER: ERROR" << std::endl;
       // TODO: might be better to close all connections
-      //  Break();
+      // Break();
     } else if (recvd == CONNECTION_CLOSED) {
       // TODO: do something
     }
@@ -23,14 +23,17 @@ bool FullyConnectedServer::OnRecv(struct pollfd &pfd) {
   }
 
   if (recvd == sizeof(int)) {
-    int32_t len;
-    auto block = block_mgr_.GetBlock(partition_id, len);
+    msgpack::sbuffer sbuf;
+    std::vector<std::unique_ptr<char[]>> refs;
+    auto len = block_mgr_.GroupPackBlocks(partitions_by_owner_[owner_id], sbuf, refs);
 
     SendBuffer header(&len, sizeof(len));
     ScheduleSend(pfd, std::move(header));
     if (len > 0) {
-      SendBuffer body(std::move(block), len);
+      SendBuffer body(std::unique_ptr<char[]>(sbuf.release()), len);
       ScheduleSend(pfd, std::move(body));
+    } else if (len < 0) {
+      partitions_by_owner_.erase(owner_id);
     }
   }
 
@@ -52,10 +55,9 @@ bool FullyConnectedServer::OnSend(struct pollfd &pfd, SendBuffer &send_buffer) {
 }
 
 bool FullyConnectedServer::OnClose(struct pollfd &pfd) {
-  num_completed_++;
   return true;
 }
 
 bool FullyConnectedServer::IsRunning() {
-  return (num_completed_ < num_clients_);
+  return partitions_by_owner_.size() > 0;
 }

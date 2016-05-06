@@ -15,55 +15,43 @@ void FullyConnectedClient::Run() {
     }
   }
 
+  int32_t len;
   int backoff = kMinBackoff;
-  std::unordered_map<int, std::unordered_set<int>> no_more_blocks;
+  std::vector<char> rbuf(1 << 19);
+  while (clients_.size() > 0) {
+    for (auto &client : clients_) {
+      client->Write(&my_owner_id_, sizeof(my_owner_id_));
 
-  while (partition_ids_.size() > 0) {
-    auto p = partition_ids_.front();
-    partition_ids_.pop();
+      if (client->Read(&len, sizeof(len)) < 0) {
+        std::cerr << "CLIENT: could not read from the server" << std::endl;
+        break;
+      }
 
-    auto &no_more = no_more_blocks[p];
+      if (len < 0) {
+        // there's no more blocks to fetch
+        client.reset();
+      } else if (len > 0) {
+        backoff = kMinBackoff;
+        if (rbuf.capacity() < len) {
+          rbuf.resize(len);
+        }
+        client->Read(rbuf.data(), len);
+        block_mgr_.GroupUnpackBlocks(rbuf.data(), len);
+      }
+    }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(backoff));
     if (backoff < kMaxBackoff) {
       backoff *= 2;
     }
 
-    bool remove_partition = true;
-    for (auto &client : clients_) {
-      if (no_more.find(client->GetSockFd()) != no_more.end()) {
-        continue;
-      }
-      client->Write(&p, sizeof(p));
-
-      int32_t len;
-      if (client->Read(&len, sizeof(len)) < 0) {
-        std::cerr << "CLIENT: could not read from the server" << std::endl;
-        break;
-      }
-      if (len < 0) {
-        // there's no more blocks to fetch
-        no_more.insert(client->GetSockFd());
-        continue;
-      }
-
-      remove_partition = false;
-      if (len > 0) {
-        backoff = kMinBackoff;
-        std::unique_ptr<char[]> block(new char[len]);
-        client->Read(block.get(), len);
-        block_mgr_.PutBlock(p, len, std::move(block));
-      }
-    }
-
-    if (!remove_partition) {
-      partition_ids_.push(p);
-    }
-  }
-
-  // close connections
-  for (auto &client : clients_) {
-    client.reset();
+    clients_.erase(
+        std::remove_if(clients_.begin(), clients_.end(),
+                       [](const std::unique_ptr<SocketClient> &client) {
+                         return !client;
+                       }),
+        clients_.end()
+    );
   }
 }
 

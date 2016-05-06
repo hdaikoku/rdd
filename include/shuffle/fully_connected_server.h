@@ -11,9 +11,11 @@
 
 class FullyConnectedServer: public SocketNonBlockingServer {
  public:
-  FullyConnectedServer(const int server_port, BlockManager &block_mgr, int num_clients)
+  FullyConnectedServer(const int server_port,
+                       BlockManager &block_mgr,
+                       std::unordered_map<int, std::vector<int>> &partitions_by_owner)
       : SocketNonBlockingServer(server_port), block_mgr_(block_mgr),
-        num_clients_(num_clients), num_completed_(0) { }
+        partitions_by_owner_(partitions_by_owner) { }
 
   std::thread Dispatch() {
     return std::thread([this]() {
@@ -30,8 +32,7 @@ class FullyConnectedServer: public SocketNonBlockingServer {
 
  private:
   BlockManager &block_mgr_;
-  int num_clients_;
-  int num_completed_;
+  std::unordered_map<int, std::vector<int>> partitions_by_owner_;
 };
 
 

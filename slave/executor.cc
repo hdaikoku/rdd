@@ -134,21 +134,19 @@ rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
 
   int rdd_id, new_rdd_id;
   std::string dl_mapper;
-  std::vector<int> owner_ids;
-  std::vector<int> partition_ids;
-  ParseParams(req, rdd_id, dl_mapper, owner_ids, partition_ids, new_rdd_id);
+  std::unordered_map<int, std::vector<int>> partitions_by_owner;
+  ParseParams(req, rdd_id, dl_mapper, partitions_by_owner, new_rdd_id);
 
   std::vector<std::pair<std::string, int>> executors;
-  for (const auto &i : owner_ids) {
-    if (i != id_) {
-      executors.push_back(std::make_pair(executors_[i].GetAddr(), executors_[i].GetDataPort()));
-    }
+  partitions_by_owner.erase(id_);
+  for (const auto &p : partitions_by_owner) {
+    auto &owner_id = p.first;
+    executors.push_back(std::make_pair(executors_[owner_id].GetAddr(), executors_[owner_id].GetDataPort()));
   }
 
-  int num_clients = owner_ids.size() - 1;
-  FullyConnectedServer shuffle_server(executors_[id_].GetDataPort(), *block_mgr_, num_clients);
+  FullyConnectedServer shuffle_server(executors_[id_].GetDataPort(), *block_mgr_, partitions_by_owner);
   auto server_thread = shuffle_server.Dispatch();
-  FullyConnectedClient shuffle_client(executors, partition_ids, *block_mgr_);
+  FullyConnectedClient shuffle_client(executors, id_, *block_mgr_);
   auto client_thread = shuffle_client.Dispatch();
 
   auto &rdds = rdds_[rdd_id];
@@ -207,21 +205,19 @@ rdd_rpc::Response Executor::MapWithCombineShuffle(msgpack::rpc::request &req) {
 
   int rdd_id, new_rdd_id;
   std::string dl_mapper, dl_combiner;
-  std::vector<int> owner_ids;
-  std::vector<int> partition_ids;
-  ParseParams(req, rdd_id, dl_mapper, dl_combiner, owner_ids, partition_ids, new_rdd_id);
+  std::unordered_map<int, std::vector<int>> partitions_by_owner;
+  ParseParams(req, rdd_id, dl_mapper, dl_combiner, partitions_by_owner, new_rdd_id);
 
   std::vector<std::pair<std::string, int>> executors;
-  for (const auto &i : owner_ids) {
-    if (i != id_) {
-      executors.push_back(std::make_pair(executors_[i].GetAddr(), executors_[i].GetDataPort()));
-    }
+  partitions_by_owner.erase(id_);
+  for (const auto &p : partitions_by_owner) {
+    auto &owner_id = p.first;
+    executors.push_back(std::make_pair(executors_[owner_id].GetAddr(), executors_[owner_id].GetDataPort()));
   }
 
-  int num_clients = owner_ids.size() - 1;
-  FullyConnectedServer shuffle_server(executors_[id_].GetDataPort(), *block_mgr_, num_clients);
+  FullyConnectedServer shuffle_server(executors_[id_].GetDataPort(), *block_mgr_, partitions_by_owner);
   auto server_thread = shuffle_server.Dispatch();
-  FullyConnectedClient shuffle_client(executors, partition_ids, *block_mgr_);
+  FullyConnectedClient shuffle_client(executors, id_, *block_mgr_);
   auto client_thread = shuffle_client.Dispatch();
 
   auto &rdds = rdds_[rdd_id];

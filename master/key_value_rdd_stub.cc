@@ -15,7 +15,7 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
   for (const auto &p : partitions_by_owner_) {
     rc_.SetTimeout(p.first, 600);
     if (overlap) {
-      fs.push_back(rc_.Call("map_with_shuffle", p.first, rdd_id_, dl_mapper, owners, p.second, new_rdd_id));
+      fs.push_back(rc_.Call("map_with_shuffle", p.first, rdd_id_, dl_mapper, partitions_by_owner_, new_rdd_id));
     } else {
       fs.push_back(rc_.Call("map", p.first, rdd_id_, dl_mapper, new_rdd_id));
     }
@@ -52,8 +52,7 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
                             rdd_id_,
                             dl_mapper,
                             dl_combiner,
-                            owners,
-                            p.second,
+                            partitions_by_owner_,
                             new_rdd_id));
     } else {
       fs.push_back(rc_.Call("map_with_combine", p.first, rdd_id_, dl_mapper, dl_combiner, new_rdd_id));
