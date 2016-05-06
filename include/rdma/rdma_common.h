@@ -24,6 +24,10 @@ class RDMACommon {
     rclose(sock_fd_);
   }
 
+  int GetSockFd() const {
+    return sock_fd_;
+  }
+
   struct rdma_addrinfo *InitSocket(const char *addr, const char *port, int flags) {
     struct rdma_addrinfo hints, *result;
 

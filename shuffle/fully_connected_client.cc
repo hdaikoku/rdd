@@ -2,6 +2,8 @@
 // Created by Harunobu Daikoku on 2016/04/15.
 //
 
+#include <unordered_map>
+#include <unordered_set>
 #include "shuffle/fully_connected_client.h"
 
 void FullyConnectedClient::Run() {
@@ -14,9 +16,13 @@ void FullyConnectedClient::Run() {
   }
 
   int backoff = kMinBackoff;
+  std::unordered_map<int, std::unordered_set<int>> no_more_blocks;
+
   while (partition_ids_.size() > 0) {
     auto p = partition_ids_.front();
     partition_ids_.pop();
+
+    auto &no_more = no_more_blocks[p];
 
     std::this_thread::sleep_for(std::chrono::milliseconds(backoff));
     if (backoff < kMaxBackoff) {
@@ -25,6 +31,9 @@ void FullyConnectedClient::Run() {
 
     bool remove_partition = true;
     for (auto &client : clients_) {
+      if (no_more.find(client->GetSockFd()) != no_more.end()) {
+        continue;
+      }
       client->Write(&p, sizeof(p));
 
       int32_t len;
@@ -34,6 +43,7 @@ void FullyConnectedClient::Run() {
       }
       if (len < 0) {
         // there's no more blocks to fetch
+        no_more.insert(client->GetSockFd());
         continue;
       }
 

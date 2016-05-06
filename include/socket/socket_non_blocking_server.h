@@ -88,10 +88,11 @@ class SocketNonBlockingServer: public SocketServer {
         } else {
           // connected file descriptor is ready
           if (revents & POLLOUT) {
-            if (OnSend(fds[i], send_queues_[fds[i].fd].front())) {
-              auto buf = std::move(send_queues_[fds[i].fd].front());
-              send_queues_[fds[i].fd].pop();
-              if (send_queues_[fds[i].fd].empty()) {
+            auto &queue = send_queues_[fds[i].fd];
+            if (OnSend(fds[i], queue.front())) {
+              auto buf = std::move(queue.front());
+              queue.pop();
+              if (queue.empty()) {
                 fds[i].events &= ~POLLOUT;
               }
             }

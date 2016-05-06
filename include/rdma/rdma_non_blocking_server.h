@@ -35,9 +35,10 @@ class RDMANonBlockingServer: public RDMAServer {
     auto listen_fd = GetListenSocket();
     SetNonBlocking(listen_fd);
 
-    fds.emplace_back(pollfd{listen_fd, POLLIN | POLLHUP, 0});
+    fds.emplace_back(pollfd{listen_fd, POLLIN | POLLHUP | POLLERR, 0});
 
     while (fds.size() > 0) {
+      bool cleanup = false;
       if (!IsRunning() && EmptyQueues()) {
         break;
       }
@@ -65,6 +66,7 @@ class RDMANonBlockingServer: public RDMAServer {
           OnClose(fds[i]);
           rclose(fds[i].fd);
           fds[i].fd = -1;
+          cleanup = true;
           continue;
         }
 
@@ -86,10 +88,11 @@ class RDMANonBlockingServer: public RDMAServer {
         } else {
           // connected file descriptor is ready
           if (revents & POLLOUT) {
-            if (OnSend(fds[i], send_queues_[fds[i].fd].front())) {
-              auto buf = std::move(send_queues_[fds[i].fd].front());
-              send_queues_[fds[i].fd].pop();
-              if (send_queues_[fds[i].fd].empty()) {
+            auto &queue = send_queues_[fds[i].fd];
+            if (OnSend(fds[i], queue.front())) {
+              auto buf = std::move(queue.front());
+              queue.pop();
+              if (queue.empty()) {
                 fds[i].events &= ~POLLOUT;
               }
             }
@@ -99,6 +102,7 @@ class RDMANonBlockingServer: public RDMAServer {
               OnClose(fds[i]);
               rclose(fds[i].fd);
               fds[i].fd = -1;
+              cleanup = true;
             }
           }
         }
@@ -106,13 +110,15 @@ class RDMANonBlockingServer: public RDMAServer {
         fds[i].revents = 0;
       }
 
-      fds.erase(std::remove_if(fds.begin(),
-                               fds.end(),
-                               [](const struct pollfd &fd) {
-                                 return fd.fd == -1;
-                               }),
-                fds.end()
-      );
+      if (cleanup) {
+        fds.erase(std::remove_if(fds.begin(),
+                                 fds.end(),
+                                 [](const struct pollfd &fd) {
+                                   return fd.fd == -1;
+                                 }),
+                  fds.end()
+        );
+      }
     }
 
     return true;
