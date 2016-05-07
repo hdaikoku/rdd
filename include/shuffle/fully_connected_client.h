@@ -15,6 +15,7 @@
 #include <poll.h>
 #include <queue>
 #include <msgpack/sbuffer.hpp>
+#include "shuffle/recv_buffer.h"
 #include "slave/block_manager.h"
 #include "socket/socket_client.h"
 
@@ -27,6 +28,7 @@ class FullyConnectedClient {
     for (const auto &server : servers) {
       clients_.emplace_back(new SocketClient(server.first, server.second));
     }
+    num_clients_ = clients_.size();
   }
 
   std::thread Dispatch() {
@@ -38,11 +40,20 @@ class FullyConnectedClient {
  private:
   static const int kMinBackoff = 1;
   static const int kMaxBackoff = 1024;
+  int backoff_voted_;
+  int num_clients_;
   int my_owner_id_;
   std::vector<std::unique_ptr<SocketClient>> clients_;
   BlockManager &block_mgr_;
 
+  std::unordered_map<int, RecvBuffer> recv_buffers_;
+
   void Run();
+  bool OnSend(struct pollfd &pfd, SocketClient &client);
+  bool OnRecv(struct pollfd &pfd, SocketClient &client, RecvBuffer &rbuffer);
+  void Close(struct pollfd &pfd);
+  void ScheduleSend(struct pollfd &pfd);
+  void ScheduleRecv(struct pollfd &pfd, int32_t size);
 
 };
 
