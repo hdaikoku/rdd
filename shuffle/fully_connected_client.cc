@@ -2,8 +2,6 @@
 // Created by Harunobu Daikoku on 2016/04/15.
 //
 
-#include <unordered_map>
-#include <unordered_set>
 #include "shuffle/fully_connected_client.h"
 
 bool FullyConnectedClient::OnSend(struct pollfd &pfd, SocketClient &client) {
@@ -129,9 +127,10 @@ void FullyConnectedClient::Run() {
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(backoff));
-    if (backoff_voted_ == num_clients_ && backoff < kMaxBackoff) {
+//    if (backoff_voted_ == num_clients_ && backoff < kMaxBackoff) {
+//      TODO: proper backoff algorithm
 //      backoff *= 2;
-    }
+//    }
   }
 
 }

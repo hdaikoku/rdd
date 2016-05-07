@@ -28,7 +28,7 @@ class BlockManager {
   void UnpackBlocks(int partition_id, const char *buf, size_t len);
 
   int GroupPackBlocks
-      (std::vector<int> &partition_ids, msgpack::sbuffer &sbuf, std::vector<std::unique_ptr<char[]>> &refs);
+      (const std::vector<int> &partition_ids, msgpack::sbuffer &sbuf, std::vector<std::unique_ptr<char[]>> &refs);
 
   void GroupUnpackBlocks(const char *buf, size_t len);
 

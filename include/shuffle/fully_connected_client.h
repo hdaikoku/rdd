@@ -5,16 +5,13 @@
 #ifndef FULLY_CONNECTED_FULLY_CONNECTED_CLIENT_H
 #define FULLY_CONNECTED_FULLY_CONNECTED_CLIENT_H
 
-#include <algorithm>
 #include <iostream>
-#include <string>
-#include <vector>
-#include <thread>
-#include <sys/socket.h>
 #include <netdb.h>
 #include <poll.h>
-#include <queue>
-#include <msgpack/sbuffer.hpp>
+#include <sys/socket.h>
+#include <thread>
+#include <unordered_map>
+#include <vector>
 #include "shuffle/recv_buffer.h"
 #include "slave/block_manager.h"
 #include "socket/socket_client.h"

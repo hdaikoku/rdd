@@ -43,7 +43,7 @@ void BlockManager::UnpackBlocks(int partition_id, const char *buf, size_t len) {
   }
 }
 
-int BlockManager::GroupPackBlocks(std::vector<int> &partition_ids,
+int BlockManager::GroupPackBlocks(const std::vector<int> &partition_ids,
                                   msgpack::sbuffer &sbuf,
                                   std::vector<std::unique_ptr<char[]>> &refs) {
   int32_t len = 0;
