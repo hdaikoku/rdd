@@ -2,15 +2,13 @@
 // Created by Harunobu Daikoku on 2015/10/29.
 //
 
-#include <sstream>
-#include <fstream>
+#include "text_file_index.h"
 #include "shuffle/fully_connected_client.h"
 #include "shuffle/fully_connected_server.h"
-#include "text_file_index.h"
-#include "worker/text_file_rdd.h"
 #include "shuffle/pairwise_shuffle_server.h"
 #include "shuffle/pairwise_shuffle_client.h"
 #include "worker/executor.h"
+#include "worker/text_file_rdd.h"
 #include "worker/key_values_rdd.h"
 
 void Executor::dispatch(msgpack::rpc::request req) {
@@ -69,8 +67,8 @@ void Executor::dispatch(msgpack::rpc::request req) {
 rdd_rpc::Response Executor::Hello(msgpack::rpc::request &req) {
   std::cout << "hello called" << std::endl;
 
-  ParseParams(req, id_, executors_);
-  std::cout << "my executor_id: " << id_ << std::endl;
+  ParseParams(req, my_executor_id_, executors_);
+  std::cout << "my executor_id: " << my_executor_id_ << std::endl;
 
   return rdd_rpc::Response::OK;
 }
@@ -129,15 +127,15 @@ rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
   ParseParams(req, rdd_id, dl_mapper, dl_combiner, partitions_by_owner, new_rdd_id);
 
   std::vector<std::pair<std::string, int>> executors;
-  partitions_by_owner.erase(id_);
+  partitions_by_owner.erase(my_executor_id_);
   for (const auto &p : partitions_by_owner) {
     auto &owner_id = p.first;
     executors.push_back(std::make_pair(executors_[owner_id].GetAddr(), executors_[owner_id].GetDataPort()));
   }
 
-  FullyConnectedServer shuffle_server(executors_[id_].GetDataPort(), *block_mgr_, partitions_by_owner);
+  FullyConnectedServer shuffle_server(executors_[my_executor_id_].GetDataPort(), *block_mgr_, partitions_by_owner);
   auto server_thread = shuffle_server.Dispatch();
-  FullyConnectedClient shuffle_client(executors, id_, *block_mgr_);
+  FullyConnectedClient shuffle_client(executors, my_executor_id_, *block_mgr_);
   auto client_thread = shuffle_client.Dispatch();
 
   auto &rdds = rdds_[rdd_id];
@@ -167,8 +165,8 @@ rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
   std::vector<int> partition_ids;
   ParseParams(req, partition_ids);
 
-  PairwiseShuffleServer shuffle_server(id_, *block_mgr_);
-  shuffle_server.Start(partition_ids, executors_[id_].GetDataPort());
+  PairwiseShuffleServer shuffle_server(my_executor_id_, *block_mgr_);
+  shuffle_server.Start(partition_ids, executors_[my_executor_id_].GetDataPort());
 
   return rdd_rpc::Response::OK;
 }
@@ -181,7 +179,7 @@ rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
   int server_port;
   ParseParams(req, partition_ids, server_addr, server_port);
 
-  PairwiseShuffleClient shuffle_client(id_, *block_mgr_);
+  PairwiseShuffleClient shuffle_client(my_executor_id_, *block_mgr_);
   shuffle_client.Start(partition_ids, server_addr, server_port);
 
   return rdd_rpc::Response::OK;

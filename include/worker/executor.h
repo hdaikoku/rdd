@@ -23,7 +23,7 @@ class Executor: public msgpack::rpc::dispatcher {
  private:
   std::string addr_;
   int job_port_;
-  int id_;
+  int my_executor_id_;
   std::vector<WorkerContext> executors_;
   std::unordered_map<int, tbb::concurrent_vector<std::unique_ptr<RDD>>> rdds_;
   std::unique_ptr<BlockManager> block_mgr_;
