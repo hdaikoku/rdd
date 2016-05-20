@@ -103,24 +103,18 @@ rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
   ParseParams(req, rdd_id, dl_mapper, dl_combiner, new_rdd_id);
 
   auto &rdds = rdds_[rdd_id];
-  assert(rdds.size() > 0);
-
   auto &new_rdds = rdds_[new_rdd_id];
-  tbb::parallel_for(
-      tbb::blocked_range<int>(0, rdds.size(), 1),
-      [&](tbb::blocked_range<int> &range) {
-        for (int i = range.begin(); i < range.end(); i++) {
-          // TODO dirty hack :)
-          auto new_rdd = static_cast<TextFileRDD *>(rdds[i].get())
-              ->Map<std::string, int>(dl_mapper);
-          if (dl_combiner != "") {
-            new_rdd->Combine(dl_combiner);
-          }
-          new_rdd->PutBlocks(*block_mgr_);
-          new_rdds.push_back(std::move(new_rdd));
-        }
-      }
-  );
+  tbb::parallel_for_each(rdds.begin(), rdds.end(), [&](const std::unique_ptr<RDD> &rdd) {
+    // TODO dirty hack :)
+    auto mapped = static_cast<TextFileRDD *>(rdd.get())
+        ->Map<std::string, int>(dl_mapper);
+    if (dl_combiner != "") {
+      mapped->Combine(dl_combiner);
+    }
+    mapped->PutBlocks(*block_mgr_);
+    new_rdds.push_back(std::move(mapped));
+  });
+
   block_mgr_->Finalize();
 
   return rdd_rpc::Response::OK;
@@ -148,21 +142,17 @@ rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
 
   auto &rdds = rdds_[rdd_id];
   auto &new_rdds = rdds_[new_rdd_id];
-  tbb::parallel_for(
-      tbb::blocked_range<int>(0, rdds.size(), 1),
-      [&](tbb::blocked_range<int> &range) {
-        for (int i = range.begin(); i < range.end(); i++) {
-          // TODO dirty hack :)
-          auto new_rdd = static_cast<TextFileRDD *>(rdds[i].get())
-              ->Map<std::string, int>(dl_mapper);
-          if (dl_combiner != "") {
-            new_rdd->Combine(dl_combiner);
-          }
-          new_rdd->PutBlocks(*block_mgr_);
-          new_rdds.push_back(std::move(new_rdd));
-        }
-      }
-  );
+  tbb::parallel_for_each(rdds.begin(), rdds.end(), [&](const std::unique_ptr<RDD> &rdd) {
+    // TODO dirty hack :)
+    auto mapped = static_cast<TextFileRDD *>(rdd.get())
+        ->Map<std::string, int>(dl_mapper);
+    if (dl_combiner != "") {
+      mapped->Combine(dl_combiner);
+    }
+    mapped->PutBlocks(*block_mgr_);
+    new_rdds.push_back(std::move(mapped));
+  });
+
   block_mgr_->Finalize();
 
   client_thread.join();
@@ -206,17 +196,11 @@ rdd_rpc::Response Executor::Reduce(msgpack::rpc::request &req) {
 
   auto &rdds = rdds_[rdd_id];
   auto &new_rdds = rdds_[new_rdd_id];
-  tbb::parallel_for(
-      tbb::blocked_range<int>(0, rdds.size(), 1),
-      [&](tbb::blocked_range<int> &range) {
-        for (int i = range.begin(); i < range.end(); i++) {
-          // TODO dirty hack :)
-          auto rdd = static_cast<KeyValuesRDD<std::string, int> *>(rdds[i].get());
-          rdd->GetBlocks(*block_mgr_);
-          new_rdds.push_back(rdd->Reduce<std::string, int>(dl_reducer));
-        }
-      }
-  );
+  tbb::parallel_for_each(rdds.begin(), rdds.end(), [&](const std::unique_ptr<RDD> &rdd) {
+    auto kvs_rdd = static_cast<KeyValuesRDD<std::string, int> *>(rdd.get());
+    kvs_rdd->GetBlocks(*block_mgr_);
+    new_rdds.push_back(kvs_rdd->Reduce<std::string, int>(dl_reducer));
+  });
 
   return rdd_rpc::Response::OK;
 }
@@ -228,16 +212,11 @@ rdd_rpc::Response Executor::GroupBy(msgpack::rpc::request &req) {
   ParseParams(req, rdd_id);
 
   auto &rdds = rdds_[rdd_id];
-  tbb::parallel_for(
-      tbb::blocked_range<int>(0, rdds.size(), 1),
-      [&](tbb::blocked_range<int> &range) {
-        for (int i = range.begin(); i < range.end(); i++) {
-          // TODO dirty hack :)
-          auto rdd = static_cast<KeyValuesRDD<std::string, int> *>(rdds[i].get());
-          rdd->GetBlocks(*block_mgr_);
-        }
-      }
-  );
+  tbb::parallel_for_each(rdds.begin(), rdds.end(), [&](const std::unique_ptr<RDD> &rdd) {
+    // FIXME: dirty hack :)
+    auto kvs_rdd = static_cast<KeyValuesRDD<std::string, int> *>(rdd.get());
+    kvs_rdd->GetBlocks(*block_mgr_);
+  });
 
   return rdd_rpc::Response::OK;
 }
