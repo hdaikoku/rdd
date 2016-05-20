@@ -6,5 +6,5 @@ include_directories(./include)
 
 add_subdirectory(examples)
 add_subdirectory(master)
-add_subdirectory(slave)
+add_subdirectory(worker)
 

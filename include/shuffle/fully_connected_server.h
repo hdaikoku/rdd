@@ -6,7 +6,7 @@
 #define FULLY_CONNECTED_FULLY_CONNECTED_H
 
 #include <thread>
-#include "slave/block_manager.h"
+#include "worker/block_manager.h"
 #include "socket/socket_non_blocking_server.h"
 
 class FullyConnectedServer: public SocketNonBlockingServer {

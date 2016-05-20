@@ -8,7 +8,7 @@ set(MASTER_SOURCE_FILES
         ../include/master/key_value_rdd_stub.h key_value_rdd_stub.cc
         ../include/master/key_values_rdd_stub.h key_values_rdd_stub.cc
         ../include/master/text_file_rdd_stub.h text_file_rdd_stub.cc
-        ../include/slave_context.h
+        ../include/worker_context.h
         ../include/text_file_index.h
         ../include/rdd_rpc.h)
 

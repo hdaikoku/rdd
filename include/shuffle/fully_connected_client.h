@@ -13,7 +13,7 @@
 #include <unordered_map>
 #include <vector>
 #include "shuffle/recv_buffer.h"
-#include "slave/block_manager.h"
+#include "worker/block_manager.h"
 #include "socket/socket_client.h"
 
 class FullyConnectedClient {

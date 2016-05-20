@@ -1,14 +1,14 @@
-project(RDDSlave)
+project(RDDWorker)
 
-set(SLAVE_SOURCE_FILES
-        slave.cc
-        ../include/slave_context.h
-        ../include/slave/executor.h executor.cc
-        ../include/slave/rdd.h rdd.cc
-        ../include/slave/key_value_rdd.h
-        ../include/slave/key_values_rdd.h
-        ../include/slave/text_file_rdd.h
-        ../include/slave/block_manager.h block_manager.cc
+set(WORKER_SOURCE_FILES
+        worker.cc
+        ../include/worker_context.h
+        ../include/worker/executor.h executor.cc
+        ../include/worker/rdd.h rdd.cc
+        ../include/worker/key_value_rdd.h
+        ../include/worker/key_values_rdd.h
+        ../include/worker/text_file_rdd.h
+        ../include/worker/block_manager.h block_manager.cc
         ../include/socket/socket_common.h
         ../include/socket/socket_client.h
         ../include/socket/socket_server.h
@@ -18,6 +18,6 @@ set(SLAVE_SOURCE_FILES
         ../include/shuffle/pairwise_shuffle_server.h ../shuffle/pairwise_shuffle_server.cc
         ../include/shuffle/pairwise_shuffle_client.h ../shuffle/pairwise_shuffle_client.cc)
 
-add_executable(RDDSlave ${SLAVE_SOURCE_FILES})
+add_executable(RDDWorker ${WORKER_SOURCE_FILES})
 
-target_link_libraries(RDDSlave msgpack jubatus_mpio jubatus_msgpack-rpc dl tbb)
+target_link_libraries(RDDWorker msgpack jubatus_mpio jubatus_msgpack-rpc dl tbb)

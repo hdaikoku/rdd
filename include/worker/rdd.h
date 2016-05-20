@@ -8,7 +8,7 @@
 #include <msgpack.hpp>
 #include <string>
 #include <vector>
-#include "slave/block_manager.h"
+#include "worker/block_manager.h"
 
 class RDD {
  public:

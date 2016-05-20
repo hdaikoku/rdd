@@ -8,11 +8,11 @@
 #include <string>
 #include <msgpack.hpp>
 
-class SlaveContext {
+class WorkerContext {
  public:
 
-  SlaveContext() { }
-  SlaveContext(const std::string &addr, int job_port, int data_port)
+  WorkerContext() { }
+  WorkerContext(const std::string &addr, int job_port, int data_port)
       : addr_(addr), job_port_(job_port), data_port_(data_port) { }
 
   std::string GetAddr() const {

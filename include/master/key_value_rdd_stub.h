@@ -18,9 +18,8 @@ class KeyValueRDDStub: public RDDStub {
   KeyValueRDDStub(RDDContext &rc, int rdd_id, const std::unordered_map<int, std::vector<int>> &partition_ids)
       : RDDStub(rc, rdd_id, partition_ids) { }
 
-  std::unique_ptr<KeyValuesRDDStub> Map(const std::string &dl_filename, bool overlap = true);
-
-  std::unique_ptr<KeyValuesRDDStub> Map(const std::string &dl_mapper, const std::string &dl_combiner, bool overlap = true);
+  std::unique_ptr<KeyValuesRDDStub>
+      Map(const std::string &dl_mapper, const std::string &dl_combiner = "", bool overlap = true);
 
 };
 

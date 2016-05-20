@@ -11,7 +11,7 @@ class RDDStub;
 #include <string>
 #include <jubatus/msgpack/rpc/session_pool.h>
 #include "master/text_file_rdd_stub.h"
-#include "slave_context.h"
+#include "worker_context.h"
 
 class RDDContext {
  public:
@@ -22,7 +22,7 @@ class RDDContext {
       return nullptr;
     }
 
-    std::vector<SlaveContext> slaves;
+    std::vector<WorkerContext> slaves;
     std::string addr;
     int job_port, data_port;
     while (ifs >> addr >> job_port >> data_port) {
@@ -108,11 +108,11 @@ class RDDContext {
   }
 
  private:
-  std::vector<SlaveContext> executors_;
+  std::vector<WorkerContext> executors_;
   msgpack::rpc::session_pool sp_;
   int last_rdd_id_;
 
-  RDDContext(const std::vector<SlaveContext> &slaves) : executors_(slaves) {
+  RDDContext(const std::vector<WorkerContext> &slaves) : executors_(slaves) {
     Init();
   }
 

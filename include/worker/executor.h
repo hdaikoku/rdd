@@ -8,7 +8,7 @@
 #include <jubatus/msgpack/rpc/server.h>
 #include <tbb/tbb.h>
 #include "rdd_rpc.h"
-#include "slave_context.h"
+#include "worker_context.h"
 #include "rdd.h"
 
 class Executor: public msgpack::rpc::dispatcher {
@@ -24,7 +24,7 @@ class Executor: public msgpack::rpc::dispatcher {
   std::string addr_;
   int job_port_;
   int id_;
-  std::vector<SlaveContext> executors_;
+  std::vector<WorkerContext> executors_;
   std::unordered_map<int, tbb::concurrent_vector<std::unique_ptr<RDD>>> rdds_;
   std::unique_ptr<BlockManager> block_mgr_;
 
@@ -32,8 +32,6 @@ class Executor: public msgpack::rpc::dispatcher {
   rdd_rpc::Response TextFile(msgpack::rpc::request &req);
   rdd_rpc::Response Map(msgpack::rpc::request &req);
   rdd_rpc::Response MapWithShuffle(msgpack::rpc::request &req);
-  rdd_rpc::Response MapWithCombine(msgpack::rpc::request &req);
-  rdd_rpc::Response MapWithCombineShuffle(msgpack::rpc::request &req);
   rdd_rpc::Response ShuffleSrv(msgpack::rpc::request &req);
   rdd_rpc::Response ShuffleCli(msgpack::rpc::request &req);
   rdd_rpc::Response Reduce(msgpack::rpc::request &req);
@@ -89,19 +87,6 @@ class Executor: public msgpack::rpc::dispatcher {
     p3 = params.template get<2>();
     p4 = params.template get<3>();
     p5 = params.template get<4>();
-  }
-
-  template<typename P1, typename P2, typename P3, typename P4, typename P5, typename P6>
-  void ParseParams(msgpack::rpc::request &req, P1 &p1, P2 &p2, P3 &p3, P4 &p4, P5 &p5, P6 &p6) const {
-    msgpack::type::tuple<P1, P2, P3, P4, P5, P6> params;
-
-    req.params().convert(&params);
-    p1 = params.template get<0>();
-    p2 = params.template get<1>();
-    p3 = params.template get<2>();
-    p4 = params.template get<3>();
-    p5 = params.template get<4>();
-    p6 = params.template get<5>();
   }
 
 };
