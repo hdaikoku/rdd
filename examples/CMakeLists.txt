@@ -10,9 +10,6 @@ project(GroupBy)
 
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../lib)
-
-link_directories(${PROJECT_SOURCE_DIR}/../lib)
 
 # WordCount
 add_library(WordCountMapper SHARED word_count_mapper.cc word_count_mapper.h)

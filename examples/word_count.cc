@@ -4,7 +4,7 @@
 
 #include <chrono>
 #include <iostream>
-#include "master/rdd_context.h"
+#include <rdd_context.h>
 
 using namespace std;
 

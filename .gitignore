@@ -1,6 +1,7 @@
 # project-specific ignores
 docker/word_count.txt
 lib
+bin
 workers.conf
 
 # Created by .ignore support plugin (hsz.mobi)

@@ -4,7 +4,7 @@
 
 #include <chrono>
 #include <iostream>
-#include "master/rdd_context.h"
+#include <rdd_context.h>
 
 using namespace std;
 
@@ -22,7 +22,7 @@ int main(int argc, const char **argv) {
   auto start_mr = chrono::steady_clock::now();
 
   auto start_map = chrono::steady_clock::now();
-  auto mapped = textFile->Map(argv[3], true);
+  auto mapped = textFile->Map(argv[3], "", true);
   auto end_map = chrono::steady_clock::now();
 
   auto start_gb = chrono::steady_clock::now();
