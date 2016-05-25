@@ -10,8 +10,9 @@ class RDDStub;
 #include <fstream>
 #include <string>
 #include <jubatus/msgpack/rpc/session_pool.h>
-#include "../src/master/text_file_rdd_stub.h"
-#include "../src/worker_context.h"
+
+#include "text_file_rdd_stub.h"
+#include "worker_context.h"
 
 class RDDContext {
  public:

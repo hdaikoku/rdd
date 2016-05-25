@@ -9,7 +9,7 @@ class KeyValueRDDStub;
 
 #include <memory>
 
-#include "master/rdd_stub.h"
+#include "rdd_stub.h"
 
 class KeyValuesRDDStub: public RDDStub {
 

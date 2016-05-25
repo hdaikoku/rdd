@@ -5,11 +5,11 @@
 #ifndef SLAVERDD_EXECUTOR_H
 #define SLAVERDD_EXECUTOR_H
 
+#include <worker_context.h>
 #include <jubatus/msgpack/rpc/server.h>
 #include <tbb/tbb.h>
 
 #include "rdd_rpc.h"
-#include "worker_context.h"
 #include "worker/rdd.h"
 
 class Executor: public msgpack::rpc::dispatcher {

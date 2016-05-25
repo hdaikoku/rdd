@@ -5,8 +5,7 @@
 #ifndef PROJECT_TEXT_FILE_RDD_STUB_H
 #define PROJECT_TEXT_FILE_RDD_STUB_H
 
-#include "text_file_index.h"
-#include "master/key_value_rdd_stub.h"
+#include "key_value_rdd_stub.h"
 
 class TextFileRDDStub: public KeyValueRDDStub {
  public:

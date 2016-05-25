@@ -2,9 +2,10 @@
 // Created by Harunobu Daikoku on 2016/02/17.
 //
 
-#include <jubatus/msgpack/rpc/client.h>
 #include <fstream>
+
 #include <rdd_context.h>
+#include <jubatus/msgpack/rpc/client.h>
 
 #include "rdd_rpc.h"
 

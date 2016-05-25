@@ -2,7 +2,6 @@
 // Created by Harunobu Daikoku on 2016/02/09.
 //
 
-#include <jubatus/msgpack/rpc/future.h>
 #include <rdd_context.h>
 
 #include "rdd_rpc.h"

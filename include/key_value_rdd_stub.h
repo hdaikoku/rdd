@@ -6,8 +6,9 @@
 #define SLAVERDD_KEY_VALUE_RDD_STUB_H
 
 #include <memory>
-#include "master/rdd_stub.h"
-#include <rdd_context.h>
+
+#include "rdd_context.h"
+#include "rdd_stub.h"
 #include "key_values_rdd_stub.h"
 
 class KeyValueRDDStub: public RDDStub {
