@@ -2,10 +2,11 @@
 // Created by Harunobu Daikoku on 2016/01/11.
 //
 
-#include <iostream>
-#include "socket/socket_client.h"
-#include "pairwise_shuffle_client.h"
+#include "worker/shuffle/pairwise_shuffle_client.h"
 
+#include <iostream>
+
+#include "worker/shuffle/socket/socket_client.h"
 
 void PairwiseShuffleClient::Start(const std::vector<int> &partition_ids,
                                   const std::string &server_addr,

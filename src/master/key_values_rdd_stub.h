@@ -8,7 +8,8 @@
 class KeyValueRDDStub;
 
 #include <memory>
-#include "rdd_stub.h"
+
+#include "master/rdd_stub.h"
 
 class KeyValuesRDDStub: public RDDStub {
 

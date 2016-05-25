@@ -6,10 +6,7 @@
 #define OVERLAP_BLOCK_MANAGER_H
 
 #include <msgpack.hpp>
-#include <tbb/mutex.h>
-#include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_queue.h>
-#include <array>
 
 using Block = std::pair<int32_t, std::unique_ptr<char[]>>;
 

@@ -2,7 +2,7 @@
 // Created by Harunobu Daikoku on 2016/04/04.
 //
 
-#include "fully_connected_server.h"
+#include "worker/shuffle/fully_connected_server.h"
 
 bool FullyConnectedServer::OnRecv(struct pollfd &pfd) {
   auto fd = pfd.fd;

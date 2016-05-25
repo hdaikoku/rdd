@@ -10,8 +10,8 @@
 #include <unordered_map>
 #include <poll.h>
 #include <queue>
-#include "../shuffle/send_buffer.h"
-#include "rdma_server.h"
+#include "worker/shuffle/send_buffer.h"
+#include "worker/shuffle/rdma/rdma_server.h"
 
 class RDMANonBlockingServer: public RDMAServer {
 

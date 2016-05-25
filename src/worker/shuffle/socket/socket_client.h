@@ -7,7 +7,8 @@
 
 #include <string>
 #include <thread>
-#include "socket_common.h"
+
+#include "worker/shuffle/socket/socket_common.h"
 
 class SocketClient: public SocketCommon {
  public:

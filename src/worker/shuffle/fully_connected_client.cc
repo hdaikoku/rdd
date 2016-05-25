@@ -2,7 +2,7 @@
 // Created by Harunobu Daikoku on 2016/04/15.
 //
 
-#include "fully_connected_client.h"
+#include "worker/shuffle/fully_connected_client.h"
 
 bool FullyConnectedClient::OnSend(struct pollfd &pfd, SocketClient &client) {
   if (client.Write(&my_owner_id_, sizeof(my_owner_id_)) < 0) {

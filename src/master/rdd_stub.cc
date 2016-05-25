@@ -3,9 +3,9 @@
 //
 
 #include <jubatus/msgpack/rpc/future.h>
-#include "../rdd_rpc.h"
-#include "rdd_stub.h"
-#include "rdd_context.h"
+#include <rdd_context.h>
+
+#include "rdd_rpc.h"
 
 void RDDStub::AddPartition(int owner, int partition_id) {
   partitions_by_owner_[owner].push_back(partition_id);

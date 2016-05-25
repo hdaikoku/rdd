@@ -4,8 +4,9 @@
 
 #include <fstream>
 #include <jubatus/msgpack/rpc/client.h>
-#include "rdd_context.h"
-#include "../rdd_rpc.h"
+#include <rdd_context.h>
+
+#include "rdd_rpc.h"
 
 void RDDContext::Init() {
   last_rdd_id_ = 0;

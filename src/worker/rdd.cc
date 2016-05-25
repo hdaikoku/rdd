@@ -2,9 +2,10 @@
 // Created by Harunobu Daikoku on 2015/11/05.
 //
 
+#include "worker/rdd.h"
+
 #include <dlfcn.h>
 #include <iostream>
-#include "rdd.h"
 
 void *RDD::LoadLib(const std::string &dl_filename) {
   const auto lib = dlopen(dl_filename.c_str(), RTLD_LAZY);
@@ -27,8 +28,12 @@ void *RDD::LoadFunc(void *handle, const std::string &func_name) {
   return func;
 }
 
+void RDD::CloseLib(void *handle) {
+  dlclose(handle);
+}
+
 int RDD::GetNumPartitions() const {
-  return n_partitions_;
+  return num_partitions_;
 }
 
 int RDD::GetPartitionID() const {

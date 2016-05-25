@@ -8,20 +8,21 @@
 template<typename K, typename V>
 class KeyValueRDD;
 
+#include <iostream>
 #include <unordered_map>
 #include <vector>
-#include <iostream>
+
 #include <msgpack.hpp>
 #include <reducer.h>
-#include <dlfcn.h>
-#include "rdd.h"
+
+#include "worker/rdd.h"
 
 template<typename K, typename V>
 class KeyValuesRDD: public RDD {
  public:
 
-  KeyValuesRDD(int n_partitions, int partition_id, google::dense_hash_map<K, std::vector<V>> &&key_values)
-      : RDD(n_partitions, partition_id) {
+  KeyValuesRDD(int num_partitions, int partition_id, google::dense_hash_map<K, std::vector<V>> &&key_values)
+      : RDD(num_partitions, partition_id) {
     for (const auto &kv : key_values) {
       key_values_.insert(std::move(kv));
     }
@@ -38,7 +39,7 @@ class KeyValuesRDD: public RDD {
         = reinterpret_cast<CreateReducer<K, V, K, V>>(LoadFunc(handle, "Create"));
     if (create_reducer == nullptr) {
       std::cerr << "dlsym" << std::endl;
-      dlclose(handle);
+      CloseLib(handle);
       return false;
     }
 
@@ -51,7 +52,7 @@ class KeyValuesRDD: public RDD {
     }
 
     combiner.reset(nullptr);
-    dlclose(handle);
+    CloseLib(handle);
 
     return true;
   }
@@ -68,7 +69,7 @@ class KeyValuesRDD: public RDD {
         = reinterpret_cast<CreateReducer<NK, NV, K, V>>(LoadFunc(handle, "Create"));
     if (create_reducer == nullptr) {
       std::cerr << "dlsym" << std::endl;
-      dlclose(handle);
+      CloseLib(handle);
       return nullptr;
     }
 
@@ -82,9 +83,11 @@ class KeyValuesRDD: public RDD {
     }
 
     reducer.reset(nullptr);
-    dlclose(handle);
+    CloseLib(handle);
 
-    return std::unique_ptr<KeyValueRDD<NK, NV>>(new KeyValueRDD<NK, NV>(n_partitions_, partition_id_, std::move(kvs)));
+    return std::unique_ptr<KeyValueRDD<NK, NV>>(new KeyValueRDD<NK, NV>(num_partitions_,
+                                                                        partition_id_,
+                                                                        std::move(kvs)));
   }
 
   // TODO: implement this for lazy evaluation

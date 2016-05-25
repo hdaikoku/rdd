@@ -2,9 +2,9 @@
 // Created by Harunobu Daikoku on 2015/11/05.
 //
 
-#include "../rdd_rpc.h"
 #include <jubatus/msgpack/rpc/future.h>
-#include "rdd_context.h"
+#include <rdd_context.h>
+#include "rdd_rpc.h"
 
 void KeyValuesRDDStub::GroupBy() {
   std::vector<msgpack::rpc::future> fs;

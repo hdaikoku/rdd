@@ -6,8 +6,8 @@
 #define FULLY_CONNECTED_FULLY_CONNECTED_H
 
 #include <thread>
-#include "block_manager.h"
-#include "socket/socket_non_blocking_server.h"
+#include "worker/shuffle/block_manager.h"
+#include "worker/shuffle/socket/socket_non_blocking_server.h"
 
 class FullyConnectedServer: public SocketNonBlockingServer {
  public:

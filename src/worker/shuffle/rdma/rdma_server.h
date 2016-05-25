@@ -5,7 +5,7 @@
 #ifndef RDMA_SERVER_CLIENT_RDMA_SERVER_H
 #define RDMA_SERVER_CLIENT_RDMA_SERVER_H
 
-#include "rdma_common.h"
+#include "worker/shuffle/rdma/rdma_common.h"
 
 class RDMAServer: public RDMACommon {
  public:

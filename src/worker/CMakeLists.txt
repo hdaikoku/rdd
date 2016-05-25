@@ -2,7 +2,6 @@ project(RDDWorker)
 
 set(WORKER_SOURCE_FILES
         worker.cc
-        ../worker_context.h
         executor.h executor.cc
         rdd.h rdd.cc
         key_value_rdd.h

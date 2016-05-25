@@ -2,10 +2,11 @@
 // Created by Harunobu Daikoku on 2016/01/11.
 //
 
-#include <cassert>
+#include "worker/shuffle/pairwise_shuffle_server.h"
+
 #include <iostream>
-#include "pairwise_shuffle_server.h"
-#include "socket/socket_server.h"
+
+#include "worker/shuffle/socket/socket_server.h"
 
 void PairwiseShuffleServer::Start(const std::vector<int> &partition_ids, int port) {
   int sock_fd;

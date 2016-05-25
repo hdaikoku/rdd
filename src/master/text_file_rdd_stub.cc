@@ -4,9 +4,9 @@
 
 #include <jubatus/msgpack/rpc/client.h>
 #include <fstream>
-#include "../text_file_index.h"
-#include "../rdd_rpc.h"
-#include "rdd_context.h"
+#include <rdd_context.h>
+
+#include "rdd_rpc.h"
 
 std::unique_ptr<TextFileRDDStub> TextFileRDDStub::NewInstance(RDDContext &rc, const std::string &filename) {
   std::vector<msgpack::rpc::future> fs;

@@ -8,7 +8,8 @@
 #include <string>
 #include <sys/socket.h>
 #include <netdb.h>
-#include "socket_common.h"
+
+#include "worker/shuffle/socket/socket_common.h"
 
 class SocketServer: public SocketCommon {
  public:

@@ -10,8 +10,9 @@
 #include <unordered_map>
 #include <poll.h>
 #include <queue>
-#include "../send_buffer.h"
-#include "socket_server.h"
+
+#include "worker/shuffle/send_buffer.h"
+#include "worker/shuffle/socket/socket_server.h"
 
 class SocketNonBlockingServer: public SocketServer {
 

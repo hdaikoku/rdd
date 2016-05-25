@@ -6,7 +6,7 @@
 #define PROJECT_TEXT_FILE_RDD_H
 
 #include <fstream>
-#include "key_value_rdd.h"
+#include "worker/key_value_rdd.h"
 
 class TextFileRDD: public KeyValueRDD<int64_t, std::string> {
  public:

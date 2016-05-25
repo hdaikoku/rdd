@@ -3,8 +3,9 @@
 //
 
 #include <jubatus/msgpack/rpc/future.h>
-#include "../rdd_rpc.h"
-#include "rdd_context.h"
+#include <rdd_context.h>
+
+#include "rdd_rpc.h"
 
 std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_mapper,
                                                        const std::string &dl_combiner,

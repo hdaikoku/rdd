@@ -12,9 +12,10 @@
 #include <thread>
 #include <unordered_map>
 #include <vector>
-#include "recv_buffer.h"
-#include "block_manager.h"
-#include "socket/socket_client.h"
+
+#include "worker/shuffle/recv_buffer.h"
+#include "worker/shuffle/block_manager.h"
+#include "worker/shuffle/socket/socket_client.h"
 
 class FullyConnectedClient {
  public:

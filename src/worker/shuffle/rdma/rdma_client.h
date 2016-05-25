@@ -8,7 +8,8 @@
 #include <string>
 #include <chrono>
 #include <thread>
-#include "rdma_common.h"
+
+#include "worker/shuffle/rdma/rdma_common.h"
 
 class RDMAClient: public RDMACommon {
  public:

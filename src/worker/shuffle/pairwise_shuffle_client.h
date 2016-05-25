@@ -5,7 +5,7 @@
 #ifndef PROJECT_PAIRWISE_SHUFFLE_CLIENT_H
 #define PROJECT_PAIRWISE_SHUFFLE_CLIENT_H
 
-#include "block_manager.h"
+#include "worker/shuffle/block_manager.h"
 
 class PairwiseShuffleClient {
  public:

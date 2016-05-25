@@ -2,8 +2,9 @@
 // Created by Harunobu Daikoku on 2015/12/28.
 //
 
+#include "worker/shuffle/block_manager.h"
+
 #include <iostream>
-#include "block_manager.h"
 
 std::unique_ptr<char[]> BlockManager::GetBlock(int buffer_id, int32_t &len) {
   Block block(0, std::unique_ptr<char[]>(nullptr));

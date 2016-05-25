@@ -2,14 +2,15 @@
 // Created by Harunobu Daikoku on 2015/10/29.
 //
 
-#include "../text_file_index.h"
-#include "shuffle/fully_connected_client.h"
-#include "shuffle/fully_connected_server.h"
-#include "shuffle/pairwise_shuffle_server.h"
-#include "shuffle/pairwise_shuffle_client.h"
-#include "executor.h"
-#include "text_file_rdd.h"
-#include "key_values_rdd.h"
+#include "worker/executor.h"
+
+#include "text_file_index.h"
+#include "worker/text_file_rdd.h"
+#include "worker/key_values_rdd.h"
+#include "worker/shuffle/fully_connected_client.h"
+#include "worker/shuffle/fully_connected_server.h"
+#include "worker/shuffle/pairwise_shuffle_server.h"
+#include "worker/shuffle/pairwise_shuffle_client.h"
 
 void Executor::dispatch(msgpack::rpc::request req) {
   std::string method;

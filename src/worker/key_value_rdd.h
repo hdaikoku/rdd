@@ -9,11 +9,12 @@ template<typename K, typename V>
 class KeyValuesRDD;
 
 #include <iostream>
-#include <tbb/tbb.h>
-#include <mapper.h>
-#include <dlfcn.h>
 #include <unordered_map>
-#include "rdd.h"
+
+#include <mapper.h>
+#include <tbb/tbb.h>
+
+#include "worker/rdd.h"
 
 template<typename K, typename V>
 class KeyValueRDD: public RDD {
@@ -21,10 +22,10 @@ class KeyValueRDD: public RDD {
 
   KeyValueRDD() {}
 
-  KeyValueRDD(int n_partitions, int partition_id) : RDD(n_partitions, partition_id) { }
+  KeyValueRDD(int num_partitions, int partition_id) : RDD(num_partitions, partition_id) { }
 
-  KeyValueRDD(int n_partitions, int partition_id, google::dense_hash_map<K, V> &&key_values)
-      : RDD(n_partitions, partition_id) {
+  KeyValueRDD(int num_partitions, int partition_id, google::dense_hash_map<K, V> &&key_values)
+      : RDD(num_partitions, partition_id) {
     for (const auto &kv : key_values) {
       key_values_.insert(std::move(kv));
     }
@@ -46,7 +47,7 @@ class KeyValueRDD: public RDD {
         = reinterpret_cast<CreateMapper<NK, NV, K, V>>(LoadFunc(handle, "Create"));
     if (create_mapper == nullptr) {
       std::cerr << "dlsym" << std::endl;
-      dlclose(handle);
+      CloseLib(handle);
       return nullptr;
     }
 
@@ -60,9 +61,9 @@ class KeyValueRDD: public RDD {
     }
 
     mapper.reset(nullptr);
-    dlclose(handle);
+    CloseLib(handle);
 
-    return std::unique_ptr<KeyValuesRDD<NK, NV>>(new KeyValuesRDD<NK, NV>(n_partitions_,
+    return std::unique_ptr<KeyValuesRDD<NK, NV>>(new KeyValuesRDD<NK, NV>(num_partitions_,
                                                                           partition_id_,
                                                                           std::move(kvs)));
   }

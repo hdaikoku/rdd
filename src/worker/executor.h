@@ -7,14 +7,14 @@
 
 #include <jubatus/msgpack/rpc/server.h>
 #include <tbb/tbb.h>
-#include "../rdd_rpc.h"
-#include "../worker_context.h"
-#include "rdd.h"
+
+#include "rdd_rpc.h"
+#include "worker_context.h"
+#include "worker/rdd.h"
 
 class Executor: public msgpack::rpc::dispatcher {
 
  public:
-
   Executor(const std::string &addr, int job_port)
       : addr_(addr), job_port_(job_port) { }
 
