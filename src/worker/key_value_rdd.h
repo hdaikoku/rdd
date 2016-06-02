@@ -33,10 +33,6 @@ class KeyValueRDD: public RDD {
 
   template<typename NK, typename NV>
   std::unique_ptr<KeyValuesRDD<NK, NV>> Map(const std::string &dl_filename) {
-    if (key_values_.size() == 0) {
-      Compute();
-    }
-
     void *handle = LoadLib(dl_filename);
     if (handle == NULL) {
       std::cerr << "dlopen" << std::endl;

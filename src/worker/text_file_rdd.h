@@ -13,7 +13,9 @@ class TextFileRDD: public KeyValueRDD<int64_t, std::string> {
 
   TextFileRDD(int n_partitions, const std::string &filename, const TextFileIndex &index)
       : KeyValueRDD(n_partitions, index.GetPartitionID()), filename_(filename),
-        offset_(index.GetOffset()), size_(index.GetSize()) { }
+        offset_(index.GetOffset()), size_(index.GetSize()) {
+    Compute();
+  }
 
   virtual void Compute() override {
     std::ifstream ifs(filename_);
