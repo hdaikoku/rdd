@@ -16,7 +16,6 @@ void PairwiseShuffleServer::Start(const std::vector<int> &partition_ids, int por
     std::cerr << "listen failed: " << port << std::endl;
     return;
   }
-  std::cout << "listening: " << port << std::endl;
 
   if ((sock_fd = server.Accept(server.GetListenSocket())) < 0) {
     perror("accept");
