@@ -11,8 +11,8 @@
 class TextFileRDD: public KeyValueRDD<int64_t, std::string> {
  public:
 
-  TextFileRDD(int n_partitions, const std::string &filename, const TextFileIndex &index)
-      : KeyValueRDD(n_partitions, index.GetPartitionID()), filename_(filename),
+  TextFileRDD(int num_partitions, const std::string &filename, const TextFileIndex &index)
+      : KeyValueRDD(num_partitions, index.GetPartitionID(), -1), filename_(filename),
         offset_(index.GetOffset()), size_(index.GetSize()) {
     Compute();
   }
@@ -31,7 +31,7 @@ class TextFileRDD: public KeyValueRDD<int64_t, std::string> {
     auto line = strtok_r(buf.get(), "\n", &save_ptr);
     while (line != nullptr) {
       auto len = std::char_traits<char>::length(line);
-      key_values_.emplace(std::make_pair(offset, std::string(line, len)));
+      key_values_[offset] = std::string(line, len);
       offset += (len + 1);
       line = strtok_r(nullptr, "\n", &save_ptr);
     }

@@ -21,12 +21,8 @@ template<typename K, typename V>
 class KeyValuesRDD: public RDD {
  public:
 
-  KeyValuesRDD(int num_partitions, int partition_id, google::dense_hash_map<K, std::vector<V>> &&key_values)
-      : RDD(num_partitions, partition_id) {
-    for (const auto &kv : key_values) {
-      key_values_.insert(std::move(kv));
-    }
-  }
+  KeyValuesRDD(int num_partitions, int partition_id, const google::dense_hash_map<K, std::vector<V>> &key_values)
+      : RDD(num_partitions, partition_id), key_values_(key_values) { }
 
   bool Combine(const std::string &dl_filename) {
     void *handle = LoadLib(dl_filename);
@@ -87,7 +83,7 @@ class KeyValuesRDD: public RDD {
 
     return std::unique_ptr<KeyValueRDD<NK, NV>>(new KeyValueRDD<NK, NV>(num_partitions_,
                                                                         partition_id_,
-                                                                        std::move(kvs)));
+                                                                        kvs));
   }
 
   // TODO: implement this for lazy evaluation
@@ -124,7 +120,7 @@ class KeyValuesRDD: public RDD {
   }
 
  private:
-  std::unordered_map<K, std::vector<V>> key_values_;
+  google::dense_hash_map<K, std::vector<V>> key_values_;
 
   virtual void Pack(std::vector<msgpack::sbuffer> &buffers) const override {
     auto num_partitions = buffers.size();

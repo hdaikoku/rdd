@@ -22,14 +22,12 @@ class KeyValueRDD: public RDD {
 
   KeyValueRDD() {}
 
-  KeyValueRDD(int num_partitions, int partition_id) : RDD(num_partitions, partition_id) { }
-
-  KeyValueRDD(int num_partitions, int partition_id, google::dense_hash_map<K, V> &&key_values)
-      : RDD(num_partitions, partition_id) {
-    for (const auto &kv : key_values) {
-      key_values_.insert(std::move(kv));
-    }
+  KeyValueRDD(int num_partitions, int partition_id, K empty_key) : RDD(num_partitions, partition_id) {
+    key_values_.set_empty_key(empty_key);
   }
+
+  KeyValueRDD(int num_partitions, int partition_id, const google::dense_hash_map<K, V> &key_values)
+      : RDD(num_partitions, partition_id), key_values_(key_values) { }
 
   template<typename NK, typename NV>
   std::unique_ptr<KeyValuesRDD<NK, NV>> Map(const std::string &dl_filename) {
@@ -80,7 +78,7 @@ class KeyValueRDD: public RDD {
   }
 
  protected:
-  std::unordered_map<K, V> key_values_;
+  google::dense_hash_map<K, V> key_values_;
 
 };
 
