@@ -70,8 +70,6 @@ void Executor::dispatch(msgpack::rpc::request req) {
 
 
 rdd_rpc::Response Executor::Hello(msgpack::rpc::request &req) {
-  std::cout << "hello called" << std::endl;
-
   ParseParams(req, my_executor_id_, executors_);
   std::cout << "my executor_id: " << my_executor_id_ << std::endl;
 
@@ -79,8 +77,6 @@ rdd_rpc::Response Executor::Hello(msgpack::rpc::request &req) {
 }
 
 rdd_rpc::Response Executor::TextFile(msgpack::rpc::request &req) {
-  std::cout << "textfile called" << std::endl;
-
   int rdd_id;
   int num_partitions;
   std::string filename;
@@ -165,8 +161,6 @@ rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
 }
 
 rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
-  std::cout << "shuffle_srv called" << std::endl;
-
   std::vector<int> partition_ids;
   ParseParams(req, partition_ids);
 
@@ -177,8 +171,6 @@ rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
 }
 
 rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
-  std::cout << "shuffle_cli called" << std::endl;
-
   std::vector<int> partition_ids;
   std::string server_addr;
   int server_port;
@@ -191,8 +183,6 @@ rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
 }
 
 rdd_rpc::Response Executor::Reduce(msgpack::rpc::request &req) {
-  std::cout << "reduce called" << std::endl;
-
   int rdd_id, new_rdd_id;
   std::string dl_reducer;
   ParseParams(req, rdd_id, dl_reducer, new_rdd_id);
@@ -209,8 +199,6 @@ rdd_rpc::Response Executor::Reduce(msgpack::rpc::request &req) {
 }
 
 rdd_rpc::Response Executor::GroupBy(msgpack::rpc::request &req) {
-  std::cout << "groupby called" << std::endl;
-
   int rdd_id;
   ParseParams(req, rdd_id);
 
@@ -225,8 +213,6 @@ rdd_rpc::Response Executor::GroupBy(msgpack::rpc::request &req) {
 }
 
 rdd_rpc::Response Executor::Print(msgpack::rpc::request &req) {
-  std::cout << "print called" << std::endl;
-
   int rdd_id;
   ParseParams(req, rdd_id);
 

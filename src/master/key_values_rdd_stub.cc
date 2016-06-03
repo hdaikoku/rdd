@@ -73,8 +73,6 @@ bool KeyValuesRDDStub::Shuffle() {
     if (!ret) {
       break;
     }
-
-    std::cout << "step " << step << ": OK" << std::endl;
   }
 
   return ret;
