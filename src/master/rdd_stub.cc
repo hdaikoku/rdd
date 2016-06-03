@@ -6,6 +6,20 @@
 
 #include "rdd_rpc.h"
 
+RDDStub::~RDDStub() {
+  std::vector<msgpack::rpc::future> fs;
+
+  for (const auto &p : partitions_by_owner_) {
+    fs.push_back(rc_.Call("clear", p.first, rdd_id_));
+  }
+
+  for (auto &f : fs) {
+    if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
+      std::cout << "oops" << std::endl;
+    }
+  }
+}
+
 void RDDStub::AddPartition(int owner, int partition_id) {
   partitions_by_owner_[owner].push_back(partition_id);
 }

@@ -37,6 +37,7 @@ class Executor: public msgpack::rpc::dispatcher {
   rdd_rpc::Response Reduce(msgpack::rpc::request &req);
   rdd_rpc::Response GroupBy(msgpack::rpc::request &req);
   rdd_rpc::Response Print(msgpack::rpc::request &req);
+  rdd_rpc::Response Clear(msgpack::rpc::request &req);
 
   template<typename P1>
   void ParseParams(msgpack::rpc::request &req, P1 &p1) const {

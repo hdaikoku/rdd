@@ -19,6 +19,8 @@ class RDDStub {
   RDDStub(RDDContext &rc, int rdd_id, const std::unordered_map<int, std::vector<int>> &partition_ids)
       : rc_(rc), rdd_id_(rdd_id), partitions_by_owner_(partition_ids) { }
 
+  virtual ~RDDStub();
+
   void AddPartition(int owner, int partition_id);
 
   void GetPartitionIDsByOwner(int owner, std::vector<int> &partition_ids);

@@ -32,7 +32,7 @@ int main(int argc, const char **argv) {
   // end: MapReduce
   auto end_mr = chrono::steady_clock::now();
 
-  reduced->Print();
+//  reduced->Print();
 
   cout << endl;
 

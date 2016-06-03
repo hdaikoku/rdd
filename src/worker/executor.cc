@@ -53,6 +53,10 @@ void Executor::dispatch(msgpack::rpc::request req) {
       // print key-values
       req.result(Print(req));
 
+    } else if (method == "clear") {
+      // clear rdd
+      req.result(Clear(req));
+
     } else {
       // there is no such methods
       req.error(msgpack::rpc::NO_METHOD_ERROR);
@@ -230,6 +234,15 @@ rdd_rpc::Response Executor::Print(msgpack::rpc::request &req) {
   for (const auto &rdd : rdds) {
     rdd->Print();
   }
+
+  return rdd_rpc::Response::OK;
+}
+
+rdd_rpc::Response Executor::Clear(msgpack::rpc::request &req) {
+  int rdd_id;
+  ParseParams(req, rdd_id);
+
+  rdds_.erase(rdd_id);
 
   return rdd_rpc::Response::OK;
 }
