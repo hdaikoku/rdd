@@ -138,8 +138,11 @@ class KeyValuesRDD: public RDD {
     while (offset != len) {
       msgpack::unpack(&unpacked, buf, len, &offset);
       unpacked.get().convert(&received);
-      std::copy(received.second.begin(), received.second.end(),
-                std::back_inserter(key_values_[received.first]));
+      auto &key = received.first;
+      auto &values = received.second;
+      std::move(values.begin(), values.end(),
+                std::back_inserter(key_values_[key]));
+      values.erase(values.begin(), values.end());
     }
   }
 
