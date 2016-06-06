@@ -9,8 +9,8 @@
 using namespace std;
 
 int main(int argc, const char **argv) {
-  if (argc != 6) {
-    cerr << "Usage: " << argv[0] << " [conf_path] [text_file] [mapper.so] [combiner.so] [reducer.so]" << endl;
+  if (argc != 5) {
+    cerr << "Usage: " << argv[0] << " [conf_path] [text_file] [mapper.so] [reducer.so]" << endl;
     return 1;
   }
 
@@ -24,7 +24,7 @@ int main(int argc, const char **argv) {
     auto end_map = chrono::steady_clock::now();
 
     auto start_reduce = chrono::steady_clock::now();
-    auto reduced = mapped->Reduce(argv[5]);
+    auto reduced = mapped->Reduce(argv[4]);
     auto end_reduce = chrono::steady_clock::now();
 
     reduced->Print();

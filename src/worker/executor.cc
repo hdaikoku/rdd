@@ -193,7 +193,7 @@ rdd_rpc::Response Executor::Reduce(msgpack::rpc::request &req) {
   tbb::parallel_for_each(rdds.begin(), rdds.end(), [&](const std::unique_ptr<RDD> &rdd) {
     auto kvs_rdd = static_cast<KeyValuesRDD<std::string, int> *>(rdd.get());
     kvs_rdd->GetBlocks(*block_mgr_);
-    new_rdds.push_back(kvs_rdd->Reduce<std::string, int>(dl_reducer));
+    new_rdds.push_back(kvs_rdd->Reduce(dl_reducer));
   });
 
   return rdd_rpc::Response::OK;

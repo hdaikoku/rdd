@@ -8,16 +8,16 @@
 #include <memory>
 #include <vector>
 
-template <typename NK, typename NV, typename K, typename V>
+template<typename K, typename V>
 class Reducer {
  public:
   Reducer() { }
   virtual ~Reducer() { }
 
-  virtual std::pair<NK, NV> Reduce(const K &key, const std::vector<V> &values) = 0;
+  virtual std::pair<K, V> Reduce(const K &key, const std::vector<V> &values) = 0;
 };
 
-template<typename NK, typename NV, typename K, typename V>
-using CreateReducer = typename std::unique_ptr<Reducer<NK, NV, K, V>> (*)();
+template<typename K, typename V>
+using CreateReducer = typename std::unique_ptr<Reducer<K, V>> (*)();
 
 #endif //SLAVERDD_REDUCER_H

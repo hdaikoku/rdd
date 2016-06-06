@@ -1,6 +1,6 @@
 # project-specific ignores
 docker/word_count.txt
-lib
+libs
 bin
 workers.conf
 

@@ -27,7 +27,7 @@ class KeyValuesRDD: public RDD {
   bool Combine(const std::string &dl_filename) {
     UDF lib_reducer(dl_filename);
 
-    auto reducer_factory = lib_reducer.LoadFunc<CreateReducer<K, V, K, V>>("Create");
+    auto reducer_factory = lib_reducer.LoadFunc<CreateReducer<K, V>>("Create");
     if (reducer_factory == nullptr) {
       std::cerr << "dlsym" << std::endl;
       return false;
@@ -44,11 +44,10 @@ class KeyValuesRDD: public RDD {
     return true;
   }
 
-  template<typename NK, typename NV>
-  std::unique_ptr<KeyValueRDD<NK, NV>> Reduce(const std::string &dl_filename) {
+  std::unique_ptr<KeyValueRDD<K, V>> Reduce(const std::string &dl_filename) {
     UDF lib_reducer(dl_filename);
 
-    auto reducer_factory = lib_reducer.LoadFunc<CreateReducer<NK, NV, K, V>>("Create");
+    auto reducer_factory = lib_reducer.LoadFunc<CreateReducer<K, V>>("Create");
     if (reducer_factory == nullptr) {
       std::cerr << "dlsym" << std::endl;
       return nullptr;
@@ -56,16 +55,16 @@ class KeyValuesRDD: public RDD {
 
     auto reducer = reducer_factory();
 
-    google::dense_hash_map<NK, NV> kvs;
+    google::dense_hash_map<K, V> kvs;
     kvs.set_empty_key("");
 
     for (const auto &kv : key_values_) {
       kvs.insert(reducer->Reduce(kv.first, kv.second));
     }
 
-    return std::unique_ptr<KeyValueRDD<NK, NV>>(new KeyValueRDD<NK, NV>(num_partitions_,
-                                                                        partition_id_,
-                                                                        kvs));
+    return std::unique_ptr<KeyValueRDD<K, V>>(new KeyValueRDD<K, V>(num_partitions_,
+                                                                    partition_id_,
+                                                                    kvs));
   }
 
   // TODO: implement this for lazy evaluation
