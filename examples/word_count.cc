@@ -18,32 +18,29 @@ int main(int argc, const char **argv) {
 
   auto textFile = rc->TextFile(argv[2]);
 
-  for (int i = 0; i < 3; i++) {
-    auto start_map = chrono::steady_clock::now();
-    auto mapped = textFile->Map(argv[3], argv[4], false);
-    auto end_map = chrono::steady_clock::now();
+  auto start_map = chrono::steady_clock::now();
+  auto mapped = textFile->Map(argv[3], argv[4], false);
+  auto end_map = chrono::steady_clock::now();
 
-    auto start_reduce = chrono::steady_clock::now();
-    auto reduced = mapped->Reduce(argv[4]);
-    auto end_reduce = chrono::steady_clock::now();
+  auto start_reduce = chrono::steady_clock::now();
+  auto reduced = mapped->Reduce(argv[4]);
+  auto end_reduce = chrono::steady_clock::now();
 
-    reduced->Print();
+  reduced->Print();
 
-    cout << endl;
+  cout << endl;
 
-    cout << "Attempt " << i << std::endl;
-    cout << "Map: "
-        << chrono::duration_cast<chrono::milliseconds>(end_map - start_map).count() / 1000.
-        << " s" << endl;
+  cout << "Map: "
+      << chrono::duration_cast<chrono::milliseconds>(end_map - start_map).count() / 1000.
+      << " s" << endl;
 
-    cout << "Reduce: "
-        << chrono::duration_cast<chrono::milliseconds>(end_reduce - start_reduce).count() / 1000.
-        << " s" << endl;
+  cout << "Reduce: "
+      << chrono::duration_cast<chrono::milliseconds>(end_reduce - start_reduce).count() / 1000.
+      << " s" << endl;
 
-    cout << "Total MapReduce: "
-        << chrono::duration_cast<chrono::milliseconds>(end_reduce - start_map).count() / 1000.
-        << " s" << endl;
-  }
+  cout << "Total MapReduce: "
+      << chrono::duration_cast<chrono::milliseconds>(end_reduce - start_map).count() / 1000.
+      << " s" << endl;
 
   return 0;
 }
