@@ -3,7 +3,7 @@ project(RDDWorker)
 set(WORKER_SOURCE_FILES
         worker.cc
         executor.h executor.cc
-        rdd.h rdd.cc
+        rdd.h
         key_value_rdd.h
         key_values_rdd.h
         text_file_rdd.h
@@ -15,7 +15,8 @@ set(WORKER_SOURCE_FILES
         shuffle/fully_connected_client.h shuffle/fully_connected_client.cc
         shuffle/fully_connected_server.h shuffle/fully_connected_server.cc
         shuffle/pairwise_shuffle_server.h shuffle/pairwise_shuffle_server.cc
-        shuffle/pairwise_shuffle_client.h shuffle/pairwise_shuffle_client.cc)
+        shuffle/pairwise_shuffle_client.h shuffle/pairwise_shuffle_client.cc
+        udf.h)
 
 add_executable(RDDWorker ${WORKER_SOURCE_FILES})
 

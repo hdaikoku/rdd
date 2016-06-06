@@ -15,6 +15,7 @@ class KeyValuesRDD;
 #include <tbb/tbb.h>
 
 #include "worker/rdd.h"
+#include "worker/udf.h"
 
 template<typename K, typename V>
 class KeyValueRDD: public RDD {
@@ -31,21 +32,15 @@ class KeyValueRDD: public RDD {
 
   template<typename NK, typename NV>
   std::unique_ptr<KeyValuesRDD<NK, NV>> Map(const std::string &dl_filename) {
-    void *handle = LoadLib(dl_filename);
-    if (handle == NULL) {
-      std::cerr << "dlopen" << std::endl;
-      return nullptr;
-    }
+    UDF lib_mapper(dl_filename);
 
-    const auto create_mapper
-        = reinterpret_cast<CreateMapper<NK, NV, K, V>>(LoadFunc(handle, "Create"));
-    if (create_mapper == nullptr) {
+    auto mapper_factory = lib_mapper.LoadFunc<CreateMapper<NK, NV, K, V>>("Create");
+    if (mapper_factory == nullptr) {
       std::cerr << "dlsym" << std::endl;
-      CloseLib(handle);
       return nullptr;
     }
 
-    auto mapper = create_mapper();
+    auto mapper = mapper_factory();
 
     google::dense_hash_map<NK, std::vector<NV>> kvs;
     kvs.set_empty_key("");
@@ -53,9 +48,6 @@ class KeyValueRDD: public RDD {
     for (const auto &kv : key_values_) {
       mapper->Map(kvs, kv.first, kv.second);
     }
-
-    mapper.reset(nullptr);
-    CloseLib(handle);
 
     return std::unique_ptr<KeyValuesRDD<NK, NV>>(new KeyValuesRDD<NK, NV>(num_partitions_,
                                                                           partition_id_,

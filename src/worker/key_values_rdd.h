@@ -25,51 +25,36 @@ class KeyValuesRDD: public RDD {
       : RDD(num_partitions, partition_id), key_values_(key_values) { }
 
   bool Combine(const std::string &dl_filename) {
-    void *handle = LoadLib(dl_filename);
-    if (handle == NULL) {
-      std::cerr << "dlopen" << std::endl;
-      return false;
-    }
+    UDF lib_reducer(dl_filename);
 
-    const auto create_reducer
-        = reinterpret_cast<CreateReducer<K, V, K, V>>(LoadFunc(handle, "Create"));
-    if (create_reducer == nullptr) {
+    auto reducer_factory = lib_reducer.LoadFunc<CreateReducer<K, V, K, V>>("Create");
+    if (reducer_factory == nullptr) {
       std::cerr << "dlsym" << std::endl;
-      CloseLib(handle);
       return false;
     }
 
-    auto combiner = create_reducer();
+    auto reducer = reducer_factory();
 
     for (const auto &kv : key_values_) {
-      auto combined = combiner->Reduce(kv.first, kv.second);
+      auto combined = reducer->Reduce(kv.first, kv.second);
       key_values_[combined.first].clear();
       key_values_[combined.first].push_back(combined.second);
     }
-
-    combiner.reset(nullptr);
-    CloseLib(handle);
 
     return true;
   }
 
   template<typename NK, typename NV>
   std::unique_ptr<KeyValueRDD<NK, NV>> Reduce(const std::string &dl_filename) {
-    void *handle = LoadLib(dl_filename);
-    if (handle == NULL) {
-      std::cerr << "dlopen" << std::endl;
-      return nullptr;
-    }
+    UDF lib_reducer(dl_filename);
 
-    const auto create_reducer
-        = reinterpret_cast<CreateReducer<NK, NV, K, V>>(LoadFunc(handle, "Create"));
-    if (create_reducer == nullptr) {
+    auto reducer_factory = lib_reducer.LoadFunc<CreateReducer<NK, NV, K, V>>("Create");
+    if (reducer_factory == nullptr) {
       std::cerr << "dlsym" << std::endl;
-      CloseLib(handle);
       return nullptr;
     }
 
-    auto reducer = create_reducer();
+    auto reducer = reducer_factory();
 
     google::dense_hash_map<NK, NV> kvs;
     kvs.set_empty_key("");
@@ -77,9 +62,6 @@ class KeyValuesRDD: public RDD {
     for (const auto &kv : key_values_) {
       kvs.insert(reducer->Reduce(kv.first, kv.second));
     }
-
-    reducer.reset(nullptr);
-    CloseLib(handle);
 
     return std::unique_ptr<KeyValueRDD<NK, NV>>(new KeyValueRDD<NK, NV>(num_partitions_,
                                                                         partition_id_,

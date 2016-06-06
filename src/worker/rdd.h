@@ -23,17 +23,17 @@ class RDD {
 
   virtual void Print() = 0;
 
-  int GetNumPartitions() const;
+  int GetNumPartitions() const {
+    return num_partitions_;
+  }
 
-  int GetPartitionID() const;
+  int GetPartitionID() const {
+    return partition_id_;
+  }
 
  protected:
   int num_partitions_;
   int partition_id_;
-
-  void *LoadLib(const std::string &dl_filename);
-  void *LoadFunc(void *handle, const std::string &func_name);
-  void CloseLib(void *handle);
 
   virtual void Pack(std::vector<msgpack::sbuffer> &buffers) const = 0;
   virtual void Unpack(const char *buf, size_t len) = 0;
