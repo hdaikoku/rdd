@@ -21,6 +21,9 @@ class RDD {
 
   virtual void Compute() = 0;
 
+  virtual void PutBlocks(BlockManager &block_mgr) = 0;
+  virtual void GetBlocks(BlockManager &block_mgr) = 0;
+
   virtual void Print() = 0;
 
   int GetNumPartitions() const {
@@ -37,9 +40,6 @@ class RDD {
 
   virtual void Pack(std::vector<msgpack::sbuffer> &buffers) const = 0;
   virtual void Unpack(const char *buf, size_t len) = 0;
-
-  virtual void PutBlocks(BlockManager &block_mgr) = 0;
-  virtual void GetBlocks(BlockManager &block_mgr) = 0;
 
   inline std::string ToString(const long long int &s) const {
     return std::to_string(s);

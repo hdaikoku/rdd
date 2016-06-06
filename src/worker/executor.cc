@@ -205,9 +205,7 @@ rdd_rpc::Response Executor::GroupBy(msgpack::rpc::request &req) {
 
   auto &rdds = rdds_[rdd_id];
   tbb::parallel_for_each(rdds.begin(), rdds.end(), [&](const std::unique_ptr<RDD> &rdd) {
-    // FIXME: dirty hack :)
-    auto kvs_rdd = static_cast<KeyValuesRDD<std::string, int> *>(rdd.get());
-    kvs_rdd->GetBlocks(*block_mgr_);
+    rdd->GetBlocks(*block_mgr_);
   });
 
   return rdd_rpc::Response::OK;
