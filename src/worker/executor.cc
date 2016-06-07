@@ -86,11 +86,11 @@ rdd_rpc::Response Executor::TextFile(msgpack::rpc::request &req) {
 
   block_mgr_.reset(new BlockManager(num_partitions));
 
-  tbb::parallel_for_each(indices.begin(), indices.end(), [&](const TextFileIndex &index) {
+  for (const auto &index : indices) {
     rdds_[rdd_id].push_back(
         std::unique_ptr<TextFileRDD>(new TextFileRDD(num_partitions, filename, index))
     );
-  });
+  }
 
   return rdd_rpc::Response::OK;
 }

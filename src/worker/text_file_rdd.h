@@ -31,7 +31,7 @@ class TextFileRDD: public KeyValueRDD<int64_t, std::string> {
     auto line = strtok_r(buf.get(), "\n", &save_ptr);
     while (line != nullptr) {
       auto len = std::char_traits<char>::length(line);
-      key_values_[offset] = std::string(line, len);
+      key_values_.insert(std::make_pair(offset, std::string(line, len)));
       offset += (len + 1);
       line = strtok_r(nullptr, "\n", &save_ptr);
     }

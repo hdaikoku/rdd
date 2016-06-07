@@ -51,7 +51,7 @@ class KeyValueRDD: public RDD {
 
     return std::unique_ptr<KeyValuesRDD<NK, NV>>(new KeyValuesRDD<NK, NV>(num_partitions_,
                                                                           partition_id_,
-                                                                          std::move(kvs)));
+                                                                          kvs));
   }
 
   // TODO: implement this for lazy evaluation
