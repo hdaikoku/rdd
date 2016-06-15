@@ -75,7 +75,8 @@ class KeyValuesRDD: public RDD {
     std::vector<msgpack::sbuffer> buffers(num_partitions);
     Pack(buffers);
     for (int i = 0; i < num_partitions; ++i) {
-      block_mgr.PutBlock(i, static_cast<int32_t>(buffers[i].size()), std::unique_ptr<char[]>(buffers[i].release()));
+      auto size = static_cast<int32_t>(buffers[i].size());
+      block_mgr.PutBlock(i, size, std::unique_ptr<char[]>(buffers[i].release()));
     }
     key_values_.clear();
   }
