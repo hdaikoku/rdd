@@ -126,7 +126,7 @@ void FullyConnectedClient::Run() {
       fds[i].revents = 0;
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(backoff));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(500));
 //    if (backoff_voted_ == num_clients_ && backoff < kMaxBackoff) {
 //      TODO: proper backoff algorithm
 //      backoff *= 2;
