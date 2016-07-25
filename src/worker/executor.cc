@@ -84,7 +84,7 @@ rdd_rpc::Response Executor::TextFile(msgpack::rpc::request &req) {
 
   ParseParams(req, rdd_id, num_partitions, filename, indices);
 
-  block_mgr_.reset(new BlockManager(num_partitions));
+  RDDEnv::GetInstance().GetBlockManager().SetNumBuffers(num_partitions);
 
   for (const auto &index : indices) {
     rdds_[rdd_id].push_back(
@@ -111,11 +111,11 @@ rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
     if (dl_combiner != "") {
       mapped->Combine(dl_combiner);
     }
-    mapped->PutBlocks(*block_mgr_);
+    mapped->PutBlocks(RDDEnv::GetInstance().GetBlockManager());
     new_rdds.push_back(std::move(mapped));
   });
 
-  block_mgr_->Finalize();
+  RDDEnv::GetInstance().GetBlockManager().Finalize();
 
   return rdd_rpc::Response::OK;
 }
@@ -135,9 +135,9 @@ rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
     executors.push_back(std::make_pair(executors_[owner_id].GetAddr(), executors_[owner_id].GetDataPort()));
   }
 
-  FullyConnectedServer shuffle_server(executors_[my_executor_id_].GetDataPort(), *block_mgr_, partitions_by_owner);
+  FullyConnectedServer shuffle_server(executors_[my_executor_id_].GetDataPort(), partitions_by_owner);
   auto server_thread = shuffle_server.Dispatch();
-  FullyConnectedClient shuffle_client(executors, my_executor_id_, *block_mgr_);
+  FullyConnectedClient shuffle_client(executors, my_executor_id_);
   auto client_thread = shuffle_client.Dispatch();
 
   auto &rdds = rdds_[rdd_id];
@@ -149,11 +149,11 @@ rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
     if (dl_combiner != "") {
       mapped->Combine(dl_combiner);
     }
-    mapped->PutBlocks(*block_mgr_);
+    mapped->PutBlocks(RDDEnv::GetInstance().GetBlockManager());
     new_rdds.push_back(std::move(mapped));
   });
 
-  block_mgr_->Finalize();
+  RDDEnv::GetInstance().GetBlockManager().Finalize();
 
   client_thread.join();
   server_thread.join();
@@ -165,7 +165,7 @@ rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
   std::vector<int> partition_ids;
   ParseParams(req, partition_ids);
 
-  PairwiseShuffleServer shuffle_server(my_executor_id_, *block_mgr_);
+  PairwiseShuffleServer shuffle_server(my_executor_id_);
   shuffle_server.Start(partition_ids, executors_[my_executor_id_].GetDataPort());
 
   return rdd_rpc::Response::OK;
@@ -177,7 +177,7 @@ rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
   int server_port;
   ParseParams(req, partition_ids, server_addr, server_port);
 
-  PairwiseShuffleClient shuffle_client(my_executor_id_, *block_mgr_);
+  PairwiseShuffleClient shuffle_client(my_executor_id_);
   shuffle_client.Start(partition_ids, server_addr, server_port);
 
   return rdd_rpc::Response::OK;
@@ -192,7 +192,7 @@ rdd_rpc::Response Executor::Reduce(msgpack::rpc::request &req) {
   auto &new_rdds = rdds_[new_rdd_id];
   tbb::parallel_for_each(rdds.begin(), rdds.end(), [&](const std::unique_ptr<RDD> &rdd) {
     auto kvs_rdd = static_cast<KeyValuesRDD<std::string, int> *>(rdd.get());
-    kvs_rdd->GetBlocks(*block_mgr_);
+    kvs_rdd->GetBlocks(RDDEnv::GetInstance().GetBlockManager());
     new_rdds.push_back(kvs_rdd->Reduce(dl_reducer));
   });
 
@@ -205,7 +205,7 @@ rdd_rpc::Response Executor::GroupBy(msgpack::rpc::request &req) {
 
   auto &rdds = rdds_[rdd_id];
   tbb::parallel_for_each(rdds.begin(), rdds.end(), [&](const std::unique_ptr<RDD> &rdd) {
-    rdd->GetBlocks(*block_mgr_);
+    rdd->GetBlocks(RDDEnv::GetInstance().GetBlockManager());
   });
 
   return rdd_rpc::Response::OK;

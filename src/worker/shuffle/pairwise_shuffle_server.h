@@ -5,11 +5,12 @@
 #ifndef PROJECT_PAIRWISE_SHUFFLE_SERVER_H
 #define PROJECT_PAIRWISE_SHUFFLE_SERVER_H
 
+#include "worker/rdd_env.h"
 #include "worker/shuffle/block_manager.h"
 
 class PairwiseShuffleServer {
  public:
-  PairwiseShuffleServer(int my_rank, BlockManager &block_mgr) : my_rank_(my_rank), block_mgr_(block_mgr) { }
+  PairwiseShuffleServer(int my_rank) : my_rank_(my_rank), block_mgr_(RDDEnv::GetInstance().GetBlockManager()) {}
 
   void Start(const std::vector<int> &partition_ids, int port);
 

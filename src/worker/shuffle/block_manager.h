@@ -13,8 +13,10 @@ using Block = std::pair<int32_t, std::unique_ptr<char[]>>;
 class BlockManager {
  public:
 
+  BlockManager() : running_(true) {}
+
   BlockManager(int num_buffers)
-      : running_(true), num_buffers_(num_buffers), buffers_(num_buffers) { }
+      : running_(true), num_buffers_(num_buffers) {}
 
   std::unique_ptr<char[]> GetBlock(int buffer_id, int32_t &len);
 
@@ -29,12 +31,14 @@ class BlockManager {
 
   void GroupUnpackBlocks(const char *buf, size_t len);
 
+  void SetNumBuffers(int num_buffers);
+
   int GetNumBuffers() const;
 
   void Finalize();
 
  protected:
-  std::vector<tbb::concurrent_queue<Block>> buffers_;
+  std::unordered_map<int, tbb::concurrent_queue<Block>> buffers_;
   int num_buffers_;
   bool running_;
 

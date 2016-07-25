@@ -16,7 +16,8 @@ set(WORKER_SOURCE_FILES
         shuffle/fully_connected_server.h shuffle/fully_connected_server.cc
         shuffle/pairwise_shuffle_server.h shuffle/pairwise_shuffle_server.cc
         shuffle/pairwise_shuffle_client.h shuffle/pairwise_shuffle_client.cc
-        udf.h)
+        udf.h
+        rdd_env.cc rdd_env.h)
 
 add_executable(RDDWorker ${WORKER_SOURCE_FILES})
 

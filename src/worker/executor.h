@@ -26,7 +26,6 @@ class Executor: public msgpack::rpc::dispatcher {
   int my_executor_id_;
   std::vector<WorkerContext> executors_;
   std::unordered_map<int, tbb::concurrent_vector<std::unique_ptr<RDD>>> rdds_;
-  std::unique_ptr<BlockManager> block_mgr_;
 
   rdd_rpc::Response Hello(msgpack::rpc::request &req);
   rdd_rpc::Response TextFile(msgpack::rpc::request &req);
