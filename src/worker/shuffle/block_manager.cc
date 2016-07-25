@@ -89,6 +89,10 @@ void BlockManager::GroupUnpackBlocks(const char *buf, size_t len) {
   }
 }
 
+void BlockManager::SetNumBuffers(int num_buffers) {
+  num_buffers_ = num_buffers;
+}
+
 int BlockManager::GetNumBuffers() const {
   return num_buffers_;
 }
