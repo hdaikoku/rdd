@@ -4,11 +4,9 @@
 
 #include "worker/shuffle/fully_connected_server.h"
 
-bool FullyConnectedServer::OnRecv(struct pollfd &pfd) {
-  auto fd = pfd.fd;
-
+bool FullyConnectedServer::OnRecv(struct pollfd &pfd, const SocketCommon &socket) {
   int owner_id;
-  auto recvd = ReadSome(fd, &owner_id, sizeof(owner_id));
+  auto recvd = socket.ReadSome(&owner_id, sizeof(owner_id));
   if (recvd < 0) {
     if (recvd == CONNECTION_ERROR) {
       // error
@@ -40,9 +38,11 @@ bool FullyConnectedServer::OnRecv(struct pollfd &pfd) {
   return true;
 }
 
-bool FullyConnectedServer::OnSend(struct pollfd &pfd, SendBuffer &send_buffer) {
+bool FullyConnectedServer::OnSend(struct pollfd &pfd,
+                                  const SocketCommon &socket,
+                                  SocketNonBlockingServer::SendBuffer &send_buffer) {
   auto size = send_buffer.GetSize();
-  auto sent = WriteSome(pfd.fd, send_buffer.Get(), size);
+  auto sent = socket.WriteSome(send_buffer.Get(), size);
   if (sent < 0) {
     // error
     std::cerr << "SERVER could not send a block" << std::endl;
@@ -52,10 +52,6 @@ bool FullyConnectedServer::OnSend(struct pollfd &pfd, SendBuffer &send_buffer) {
   send_buffer.Consumed(sent);
 
   return (sent == size);
-}
-
-bool FullyConnectedServer::OnClose(struct pollfd &pfd) {
-  return true;
 }
 
 bool FullyConnectedServer::IsRunning() {

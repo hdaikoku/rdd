@@ -128,7 +128,7 @@ rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
   std::unordered_map<int, std::vector<int>> partitions_by_owner;
   ParseParams(req, rdd_id, dl_mapper, dl_combiner, partitions_by_owner, new_rdd_id);
 
-  std::vector<std::pair<std::string, int>> executors;
+  std::vector<std::pair<std::string, std::string>> executors;
   partitions_by_owner.erase(my_executor_id_);
   for (const auto &p : partitions_by_owner) {
     auto &owner_id = p.first;
@@ -174,7 +174,7 @@ rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
 rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
   std::vector<int> partition_ids;
   std::string server_addr;
-  int server_port;
+  std::string server_port;
   ParseParams(req, partition_ids, server_addr, server_port);
 
   PairwiseShuffleClient shuffle_client(my_executor_id_);

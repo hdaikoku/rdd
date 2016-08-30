@@ -16,6 +16,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 link_directories(${PROJECT_SOURCE_DIR}/libs)
 
+option(USE_RDMA "Use RDMA" OFF)
+
 add_subdirectory(src/master)
 add_subdirectory(src/worker)
 add_subdirectory(examples)

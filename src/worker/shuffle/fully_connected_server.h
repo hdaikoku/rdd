@@ -8,11 +8,11 @@
 #include <thread>
 #include "worker/rdd_env.h"
 #include "worker/shuffle/block_manager.h"
-#include "worker/shuffle/socket/socket_non_blocking_server.h"
+#include "worker/net/socket_non_blocking_server.h"
 
 class FullyConnectedServer: public SocketNonBlockingServer {
  public:
-  FullyConnectedServer(const int server_port,
+  FullyConnectedServer(const std::string &server_port,
                        std::unordered_map<int, std::vector<int>> &partitions_by_owner)
       : SocketNonBlockingServer(server_port), block_mgr_(RDDEnv::GetInstance().GetBlockManager()),
         partitions_by_owner_(partitions_by_owner) { }
@@ -24,11 +24,9 @@ class FullyConnectedServer: public SocketNonBlockingServer {
   }
 
  protected:
-  virtual bool OnRecv(struct pollfd &pfd) override;
-  virtual bool OnSend(struct pollfd &pfd, SendBuffer &send_buffer) override;
-  virtual bool OnClose(struct pollfd &pfd) override;
+  virtual bool OnRecv(struct pollfd &pfd, const SocketCommon &socket) override;
+  virtual bool OnSend(struct pollfd &pfd, const SocketCommon &socket, SendBuffer &send_buffer) override;
   virtual bool IsRunning() override;
-
 
  private:
   BlockManager &block_mgr_;

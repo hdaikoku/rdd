@@ -47,10 +47,10 @@ std::string RDDContext::GetExecutorAddrById(const int &id) const {
   return executors_[id].GetAddr();
 }
 
-int RDDContext::GetExecutorPortById(const int &id) const {
+std::string RDDContext::GetExecutorPortById(const int &id) const {
   return executors_[id].GetDataPort();
 }
 
 void RDDContext::SetTimeout(int dest, unsigned int timeout) {
-  sp_.get_session(executors_[dest].GetAddr(), executors_[dest].GetJobPort()).set_timeout(timeout);
+  sp_.get_session(executors_[dest].GetAddr(), std::stoi(executors_[dest].GetJobPort())).set_timeout(timeout);
 }

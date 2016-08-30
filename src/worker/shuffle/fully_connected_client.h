@@ -5,53 +5,37 @@
 #ifndef FULLY_CONNECTED_FULLY_CONNECTED_CLIENT_H
 #define FULLY_CONNECTED_FULLY_CONNECTED_CLIENT_H
 
-#include <iostream>
-#include <netdb.h>
-#include <poll.h>
-#include <sys/socket.h>
 #include <thread>
-#include <unordered_map>
 #include <vector>
 
 #include "worker/rdd_env.h"
-#include "worker/shuffle/recv_buffer.h"
+#include "worker/net/socket_client_pool.h"
 #include "worker/shuffle/block_manager.h"
-#include "worker/shuffle/socket/socket_client.h"
 
-class FullyConnectedClient {
+class FullyConnectedClient: public SocketClientPool {
  public:
-  FullyConnectedClient(const std::vector<std::pair<std::string, int>> &servers,
+  FullyConnectedClient(const std::vector<std::pair<std::string, std::string>> &servers,
                        int my_owner_id)
-      : my_owner_id_(my_owner_id), block_mgr_(RDDEnv::GetInstance().GetBlockManager()) {
-    for (const auto &server : servers) {
-      clients_.emplace_back(new SocketClient(server.first, server.second));
-    }
-    num_clients_ = clients_.size();
-  }
+      : servers_(servers), my_owner_id_(my_owner_id), block_mgr_(RDDEnv::GetInstance().GetBlockManager()) {}
 
   std::thread Dispatch() {
     return std::thread([this]() {
-      this->Run();
+      this->Run(servers_);
     });
   }
 
  private:
-  static const int kMinBackoff = 1;
-  static const int kMaxBackoff = 1024;
-  int backoff_voted_;
-  int num_clients_;
   int my_owner_id_;
-  std::vector<std::unique_ptr<SocketClient>> clients_;
+  std::vector<std::pair<std::string, std::string>> servers_;
   BlockManager &block_mgr_;
 
-  std::unordered_map<int, RecvBuffer> recv_buffers_;
+ protected:
+  virtual bool OnRecv(struct pollfd &pfd, const SocketCommon &socket, RecvBuffer &rbuffer) override;
+  virtual bool OnSend(struct pollfd &pfd, const SocketCommon &socket) override;
 
-  void Run();
-  bool OnSend(struct pollfd &pfd, SocketClient &client);
-  bool OnRecv(struct pollfd &pfd, SocketClient &client, RecvBuffer &rbuffer);
-  void Close(struct pollfd &pfd);
-  void ScheduleSend(struct pollfd &pfd);
-  void ScheduleRecv(struct pollfd &pfd, int32_t size);
+ private:
+  static const int kTagHeader = 1;
+  static const int kTagBody = 2;
 
 };
 

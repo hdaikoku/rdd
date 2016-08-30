@@ -12,7 +12,7 @@ class PairwiseShuffleClient {
  public:
   PairwiseShuffleClient(int my_rank) : my_rank_(my_rank), block_mgr_(RDDEnv::GetInstance().GetBlockManager()) {}
 
-  void Start(const std::vector<int> &partition_ids, const std::string &server_addr, int server_port);
+  void Start(const std::vector<int> &partition_ids, const std::string &server_addr, const std::string &server_port);
 
  private:
   BlockManager &block_mgr_;

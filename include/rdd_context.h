@@ -24,8 +24,7 @@ class RDDContext {
     }
 
     std::vector<WorkerContext> slaves;
-    std::string addr;
-    int job_port, data_port;
+    std::string addr, job_port, data_port;
     while (ifs >> addr >> job_port >> data_port) {
       slaves.emplace_back(addr, job_port, data_port);
     }
@@ -44,26 +43,26 @@ class RDDContext {
   int GetNewRddId();
 
   std::string GetExecutorAddrById(const int &id) const;
-  int GetExecutorPortById(const int &id) const;
+  std::string GetExecutorPortById(const int &id) const;
 
   void SetTimeout(int dest, unsigned int timeout);
 
   // Calls the endpoint specified by dest, with one argument
   template<typename A1>
   msgpack::rpc::future Call(const std::string &func, const int &dest, const A1 &a1) {
-    return sp_.get_session(executors_[dest].GetAddr(), executors_[dest].GetJobPort()).call(func, a1);
+    return sp_.get_session(executors_[dest].GetAddr(), std::stoi(executors_[dest].GetJobPort())).call(func, a1);
   }
 
   // Calls with two args
   template<typename A1, typename A2>
   msgpack::rpc::future Call(const std::string &func, const int &dest, const A1 &a1, const A2 &a2) {
-    return sp_.get_session(executors_[dest].GetAddr(), executors_[dest].GetJobPort()).call(func, a1, a2);
+    return sp_.get_session(executors_[dest].GetAddr(), std::stoi(executors_[dest].GetJobPort())).call(func, a1, a2);
   }
 
   // Calls with three args
   template<typename A1, typename A2, typename A3>
   msgpack::rpc::future Call(const std::string &func, const int &dest, const A1 &a1, const A2 &a2, const A3 &a3) {
-    return sp_.get_session(executors_[dest].GetAddr(), executors_[dest].GetJobPort()).call(func, a1, a2, a3);
+    return sp_.get_session(executors_[dest].GetAddr(), std::stoi(executors_[dest].GetJobPort())).call(func, a1, a2, a3);
   }
 
   // Calls with four args
@@ -74,7 +73,11 @@ class RDDContext {
                             const A2 &a2,
                             const A3 &a3,
                             const A4 &a4) {
-    return sp_.get_session(executors_[dest].GetAddr(), executors_[dest].GetJobPort()).call(func, a1, a2, a3, a4);
+    return sp_.get_session(executors_[dest].GetAddr(), std::stoi(executors_[dest].GetJobPort())).call(func,
+                                                                                                      a1,
+                                                                                                      a2,
+                                                                                                      a3,
+                                                                                                      a4);
   }
 
   // Calls with five args
@@ -86,7 +89,12 @@ class RDDContext {
                             const A3 &a3,
                             const A4 &a4,
                             const A5 &a5) {
-    return sp_.get_session(executors_[dest].GetAddr(), executors_[dest].GetJobPort()).call(func, a1, a2, a3, a4, a5);
+    return sp_.get_session(executors_[dest].GetAddr(), std::stoi(executors_[dest].GetJobPort())).call(func,
+                                                                                                      a1,
+                                                                                                      a2,
+                                                                                                      a3,
+                                                                                                      a4,
+                                                                                                      a5);
   }
 
   // Calls with six args
@@ -99,13 +107,13 @@ class RDDContext {
                             const A4 &a4,
                             const A5 &a5,
                             const A6 &a6) {
-    return sp_.get_session(executors_[dest].GetAddr(), executors_[dest].GetJobPort()).call(func,
-                                                                                           a1,
-                                                                                           a2,
-                                                                                           a3,
-                                                                                           a4,
-                                                                                           a5,
-                                                                                           a6);
+    return sp_.get_session(executors_[dest].GetAddr(), std::stoi(executors_[dest].GetJobPort())).call(func,
+                                                                                                      a1,
+                                                                                                      a2,
+                                                                                                      a3,
+                                                                                                      a4,
+                                                                                                      a5,
+                                                                                                      a6);
   }
 
  private:

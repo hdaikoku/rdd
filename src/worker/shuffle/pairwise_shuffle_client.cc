@@ -6,11 +6,11 @@
 
 #include <iostream>
 
-#include "worker/shuffle/socket/socket_client.h"
+#include "worker/net/socket_client.h"
 
 void PairwiseShuffleClient::Start(const std::vector<int> &partition_ids,
                                   const std::string &server_addr,
-                                  int server_port) {
+                                  const std::string &server_port) {
   SocketClient client(server_addr, server_port);
 
   if (client.Connect() < 0) {
