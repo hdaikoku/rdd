@@ -7,12 +7,13 @@
 #include "rdd_rpc.h"
 
 std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_mapper,
-                                                       const std::string &dl_combiner,
-                                                       bool overlap) {
+                                                       const std::string &dl_combiner) {
   std::vector<msgpack::rpc::future> fs;
+
   int new_rdd_id = rc_.GetNewRddId();
   std::vector<int> owners;
   GetOwners(owners);
+  auto overlap = rc_.OverlapShuffle();
 
   if (overlap) {
     StartShuffleService();

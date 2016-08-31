@@ -43,12 +43,12 @@ int RDDContext::GetNewRddId() {
   return last_rdd_id_++;
 }
 
-std::string RDDContext::GetExecutorAddrById(const int &id) const {
-  return executors_[id].GetAddr();
+bool RDDContext::OverlapShuffle() const {
+  return overlap_shuffle_;
 }
 
-std::string RDDContext::GetExecutorPortById(const int &id) const {
-  return executors_[id].GetDataPort();
+std::string RDDContext::GetShuffleType() const {
+  return shuffle_type_;
 }
 
 void RDDContext::SetTimeout(int dest, unsigned int timeout) {

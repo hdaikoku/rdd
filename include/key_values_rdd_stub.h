@@ -25,7 +25,7 @@ class KeyValuesRDDStub: public RDDStub {
 
   std::unique_ptr<KeyValueRDDStub> Reduce(const std::string &dl_filename);
 
-  bool Shuffle(const std::string &shuffle_type = "pairwise");
+  bool Shuffle();
 
  private:
   bool shuffled_;

@@ -20,7 +20,7 @@ class KeyValueRDDStub: public RDDStub {
       : RDDStub(rc, rdd_id, partition_ids) { }
 
   std::unique_ptr<KeyValuesRDDStub>
-      Map(const std::string &dl_mapper, const std::string &dl_combiner = "", bool overlap = true);
+  Map(const std::string &dl_mapper, const std::string &dl_combiner = "");
 
 };
 

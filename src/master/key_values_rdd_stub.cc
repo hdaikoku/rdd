@@ -47,7 +47,8 @@ std::unique_ptr<KeyValueRDDStub> KeyValuesRDDStub::Reduce(const std::string &dl_
   return std::unique_ptr<KeyValueRDDStub>(new KeyValueRDDStub(rc_, new_rdd_id, partitions_by_owner_));
 }
 
-bool KeyValuesRDDStub::Shuffle(const std::string &shuffle_type) {
+bool KeyValuesRDDStub::Shuffle() {
+  auto shuffle_type = rc_.GetShuffleType();
   if (shuffle_type == "pairwise") {
     std::vector<msgpack::rpc::future> fs;
 

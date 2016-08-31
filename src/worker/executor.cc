@@ -71,7 +71,7 @@ void Executor::dispatch(msgpack::rpc::request req) {
 
 rdd_rpc::Response Executor::Hello(msgpack::rpc::request &req) {
   ParseParams(req, my_executor_id_, executors_);
-  std::cout << "my executor_id: " << my_executor_id_ << std::endl;
+  std::cerr << "my executor_id: " << my_executor_id_ << std::endl;
 
   return rdd_rpc::Response::OK;
 }
@@ -99,8 +99,6 @@ rdd_rpc::Response Executor::TextFile(msgpack::rpc::request &req) {
 }
 
 rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
-  std::cout << "map with combine called" << std::endl;
-
   int rdd_id, new_rdd_id;
   std::string dl_mapper, dl_combiner;
   ParseParams(req, rdd_id, dl_mapper, dl_combiner, new_rdd_id);
@@ -131,12 +129,14 @@ rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
   ParseParams(req, shuffle_type, rdd_id, client_id);
 
   if (shuffle_type == "pairwise") {
+    std::cerr << "Starting PairwiseShuffleServer" << std::endl;
     auto partition_ids = rdd_contexts_[rdd_id][client_id];
 
     PairwiseShuffleServer shuffle_server(my_executor_id_);
     shuffle_server.Start(partition_ids, executors_[my_executor_id_].GetDataPort());
 
   } else if (shuffle_type == "fully-connected") {
+    std::cerr << "Starting FullyConnectedShuffleServer" << std::endl;
     auto partitions_by_owner = rdd_contexts_[rdd_id];
     partitions_by_owner.erase(my_executor_id_);
 
@@ -156,12 +156,14 @@ rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
   ParseParams(req, shuffle_type, rdd_id, server_id);
 
   if (shuffle_type == "pairwise") {
+    std::cerr << "Starting PairwiseShuffleClient" << std::endl;
     auto partition_ids = rdd_contexts_[rdd_id][server_id];
 
     PairwiseShuffleClient shuffle_client(my_executor_id_);
     shuffle_client.Start(partition_ids, executors_[server_id].GetAddr(), executors_[server_id].GetDataPort());
 
   } else if (shuffle_type == "fully-connected") {
+    std::cerr << "Starting FullyConnectedShuffleClient" << std::endl;
     auto partitions_by_owner = rdd_contexts_[rdd_id];
 
     std::vector<std::pair<std::string, std::string>> executors;

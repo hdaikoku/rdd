@@ -9,17 +9,18 @@
 using namespace std;
 
 int main(int argc, const char **argv) {
-  if (argc != 5) {
-    cerr << "Usage: " << argv[0] << " [conf_path] [text_file] [mapper.so] [reducer.so]" << endl;
+  if (argc != 7) {
+    cerr << "Usage: " << argv[0] << " [conf_path] [text_file] [mapper.so] [reducer.so] [overlap?] [shuffle_type]"
+         << endl;
     return 1;
   }
 
-  auto rc = RDDContext::NewContext(argv[1]);
+  auto rc = RDDContext::NewContext(argv[1], argv[5], argv[6]);
 
   auto textFile = rc->TextFile(argv[2]);
 
   auto start_map = chrono::steady_clock::now();
-  auto mapped = textFile->Map(argv[3], argv[4], false);
+  auto mapped = textFile->Map(argv[3], argv[4]);
   auto end_map = chrono::steady_clock::now();
 
   auto start_reduce = chrono::steady_clock::now();
@@ -29,6 +30,9 @@ int main(int argc, const char **argv) {
   reduced->Print();
 
   cout << endl;
+
+  cout << "Shuffle Type: "
+       << (rc->OverlapShuffle() ? "Fully-Connected w/ overlapping" : rc->GetShuffleType()) << std::endl;
 
   cout << "Map: "
       << chrono::duration_cast<chrono::milliseconds>(end_map - start_map).count() / 1000.
