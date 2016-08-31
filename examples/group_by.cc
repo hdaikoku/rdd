@@ -9,17 +9,17 @@
 using namespace std;
 
 int main(int argc, const char **argv) {
-  if (argc != 4) {
-    cerr << "Usage: " << argv[0] << " [conf_path] [text_file] [mapper.so]" << endl;
+  if (argc != 6) {
+    cerr << "Usage: " << argv[0] << " [conf_path] [text_file] [mapper.so] [overlap?] [shuffle_type]" << endl;
     return 1;
   }
 
-  auto rc = RDDContext::NewContext(argv[1]);
+  auto rc = RDDContext::NewContext(argv[1], argv[4], argv[5]);
 
   auto textFile = rc->TextFile(argv[2]);
 
   auto start_map = chrono::steady_clock::now();
-  auto mapped = textFile->Map(argv[3], "", true);
+  auto mapped = textFile->Map(argv[3]);
   auto end_map = chrono::steady_clock::now();
 
   auto start_gb = chrono::steady_clock::now();
