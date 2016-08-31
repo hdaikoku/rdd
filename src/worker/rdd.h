@@ -13,6 +13,7 @@
 
 class RDD {
  public:
+
   RDD() { }
   RDD(int num_partitions, int partition_id)
       : num_partitions_(num_partitions), partition_id_(partition_id) { }

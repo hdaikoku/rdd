@@ -12,3 +12,14 @@ RDDEnv &RDDEnv::GetInstance() {
 BlockManager &RDDEnv::GetBlockManager() {
   return block_manager_;
 }
+
+void RDDEnv::RegisterShuffleService(std::unique_ptr<ShuffleService> &&shuffle_service) {
+  shuffle_service->Start();
+  shuffle_services_.push_back(std::move(shuffle_service));
+}
+
+void RDDEnv::StopShuffleServices() {
+  for (auto &service : shuffle_services_) {
+    service->Stop();
+  }
+}

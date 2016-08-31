@@ -29,10 +29,6 @@ void Executor::dispatch(msgpack::rpc::request req) {
       // Map specified RDD
       req.result(Map(req));
 
-    } else if (method == "map_with_shuffle") {
-      // Map overlapped by shuffle
-      req.result(MapWithShuffle(req));
-
     } else if (method == "shuffle_srv") {
       // shuffle, act as a server
       req.result(ShuffleSrv(req));
@@ -40,6 +36,10 @@ void Executor::dispatch(msgpack::rpc::request req) {
     } else if (method == "shuffle_cli") {
       // shuffle, act as a client
       req.result(ShuffleCli(req));
+
+    } else if (method == "stop_shuffle") {
+      // stop shuffle services
+      req.result(StopShuffle(req));
 
     } else if (method == "reduce") {
       // reduce
@@ -81,8 +81,9 @@ rdd_rpc::Response Executor::TextFile(msgpack::rpc::request &req) {
   int num_partitions;
   std::string filename;
   std::vector<TextFileIndex> indices;
+  std::unordered_map<int, std::vector<int>> partitions_by_owner;
 
-  ParseParams(req, rdd_id, num_partitions, filename, indices);
+  ParseParams(req, rdd_id, num_partitions, partitions_by_owner, filename, indices);
 
   RDDEnv::GetInstance().GetBlockManager().SetNumBuffers(num_partitions);
 
@@ -91,6 +92,8 @@ rdd_rpc::Response Executor::TextFile(msgpack::rpc::request &req) {
         std::unique_ptr<TextFileRDD>(new TextFileRDD(num_partitions, filename, index))
     );
   });
+
+  rdd_contexts_.emplace(std::make_pair(rdd_id, partitions_by_owner));
 
   return rdd_rpc::Response::OK;
 }
@@ -117,68 +120,69 @@ rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
 
   RDDEnv::GetInstance().GetBlockManager().Finalize();
 
-  return rdd_rpc::Response::OK;
-}
-
-rdd_rpc::Response Executor::MapWithShuffle(msgpack::rpc::request &req) {
-  std::cout << "map with combine/shuffle called" << std::endl;
-
-  int rdd_id, new_rdd_id;
-  std::string dl_mapper, dl_combiner;
-  std::unordered_map<int, std::vector<int>> partitions_by_owner;
-  ParseParams(req, rdd_id, dl_mapper, dl_combiner, partitions_by_owner, new_rdd_id);
-
-  std::vector<std::pair<std::string, std::string>> executors;
-  partitions_by_owner.erase(my_executor_id_);
-  for (const auto &p : partitions_by_owner) {
-    auto &owner_id = p.first;
-    executors.push_back(std::make_pair(executors_[owner_id].GetAddr(), executors_[owner_id].GetDataPort()));
-  }
-
-  FullyConnectedServer shuffle_server(executors_[my_executor_id_].GetDataPort(), partitions_by_owner);
-  auto server_thread = shuffle_server.Dispatch();
-  FullyConnectedClient shuffle_client(executors, my_executor_id_);
-  auto client_thread = shuffle_client.Dispatch();
-
-  auto &rdds = rdds_[rdd_id];
-  auto &new_rdds = rdds_[new_rdd_id];
-  tbb::parallel_for_each(rdds.begin(), rdds.end(), [&](const std::unique_ptr<RDD> &rdd) {
-    // TODO dirty hack :)
-    auto mapped = static_cast<TextFileRDD *>(rdd.get())
-        ->Map<std::string, int>(dl_mapper);
-    if (dl_combiner != "") {
-      mapped->Combine(dl_combiner);
-    }
-    mapped->PutBlocks(RDDEnv::GetInstance().GetBlockManager());
-    new_rdds.push_back(std::move(mapped));
-  });
-
-  RDDEnv::GetInstance().GetBlockManager().Finalize();
-
-  client_thread.join();
-  server_thread.join();
+  rdd_contexts_.emplace(std::make_pair(new_rdd_id, rdd_contexts_[rdd_id]));
 
   return rdd_rpc::Response::OK;
 }
 
 rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
-  std::vector<int> partition_ids;
-  ParseParams(req, partition_ids);
+  int rdd_id, client_id;
+  std::string shuffle_type;
+  ParseParams(req, shuffle_type, rdd_id, client_id);
 
-  PairwiseShuffleServer shuffle_server(my_executor_id_);
-  shuffle_server.Start(partition_ids, executors_[my_executor_id_].GetDataPort());
+  if (shuffle_type == "pairwise") {
+    auto partition_ids = rdd_contexts_[rdd_id][client_id];
+
+    PairwiseShuffleServer shuffle_server(my_executor_id_);
+    shuffle_server.Start(partition_ids, executors_[my_executor_id_].GetDataPort());
+
+  } else if (shuffle_type == "fully-connected") {
+    auto partitions_by_owner = rdd_contexts_[rdd_id];
+    partitions_by_owner.erase(my_executor_id_);
+
+    std::unique_ptr<FullyConnectedServer> shuffle_server(
+        new FullyConnectedServer(executors_[my_executor_id_].GetDataPort(), partitions_by_owner)
+    );
+
+    RDDEnv::GetInstance().RegisterShuffleService(std::move(shuffle_server));
+  }
 
   return rdd_rpc::Response::OK;
 }
 
 rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
-  std::vector<int> partition_ids;
-  std::string server_addr;
-  std::string server_port;
-  ParseParams(req, partition_ids, server_addr, server_port);
+  int rdd_id, server_id;
+  std::string shuffle_type;
+  ParseParams(req, shuffle_type, rdd_id, server_id);
 
-  PairwiseShuffleClient shuffle_client(my_executor_id_);
-  shuffle_client.Start(partition_ids, server_addr, server_port);
+  if (shuffle_type == "pairwise") {
+    auto partition_ids = rdd_contexts_[rdd_id][server_id];
+
+    PairwiseShuffleClient shuffle_client(my_executor_id_);
+    shuffle_client.Start(partition_ids, executors_[server_id].GetAddr(), executors_[server_id].GetDataPort());
+
+  } else if (shuffle_type == "fully-connected") {
+    auto partitions_by_owner = rdd_contexts_[rdd_id];
+
+    std::vector<std::pair<std::string, std::string>> executors;
+    partitions_by_owner.erase(my_executor_id_);
+    for (const auto &p : partitions_by_owner) {
+      auto &owner_id = p.first;
+      executors.push_back(std::make_pair(executors_[owner_id].GetAddr(), executors_[owner_id].GetDataPort()));
+    }
+
+    std::unique_ptr<FullyConnectedClient> shuffle_client(
+        new FullyConnectedClient(executors, my_executor_id_)
+    );
+
+    RDDEnv::GetInstance().RegisterShuffleService(std::move(shuffle_client));
+  }
+
+  return rdd_rpc::Response::OK;
+}
+
+rdd_rpc::Response Executor::StopShuffle(msgpack::rpc::request &req) {
+  RDDEnv::GetInstance().StopShuffleServices();
 
   return rdd_rpc::Response::OK;
 }
@@ -195,6 +199,8 @@ rdd_rpc::Response Executor::Reduce(msgpack::rpc::request &req) {
     kvs_rdd->GetBlocks(RDDEnv::GetInstance().GetBlockManager());
     new_rdds.push_back(kvs_rdd->Reduce(dl_reducer));
   });
+
+  rdd_contexts_.emplace(std::make_pair(new_rdd_id, rdd_contexts_[rdd_id]));
 
   return rdd_rpc::Response::OK;
 }

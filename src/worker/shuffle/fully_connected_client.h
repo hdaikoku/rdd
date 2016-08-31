@@ -7,35 +7,31 @@
 
 #include <thread>
 #include <vector>
-
 #include "worker/rdd_env.h"
 #include "worker/net/socket_client_pool.h"
 #include "worker/shuffle/block_manager.h"
+#include "worker/shuffle/shuffle_service.h"
 
-class FullyConnectedClient: public SocketClientPool {
+class FullyConnectedClient: public SocketClientPool, public ShuffleService {
  public:
   FullyConnectedClient(const std::vector<std::pair<std::string, std::string>> &servers,
                        int my_owner_id)
-      : servers_(servers), my_owner_id_(my_owner_id), block_mgr_(RDDEnv::GetInstance().GetBlockManager()) {}
+      : SocketClientPool(servers), my_owner_id_(my_owner_id), block_mgr_(RDDEnv::GetInstance().GetBlockManager()) {}
 
-  std::thread Dispatch() {
-    return std::thread([this]() {
-      this->Run(servers_);
-    });
-  }
+  virtual void Start() override;
 
- private:
-  int my_owner_id_;
-  std::vector<std::pair<std::string, std::string>> servers_;
-  BlockManager &block_mgr_;
-
- protected:
-  virtual bool OnRecv(struct pollfd &pfd, const SocketCommon &socket, RecvBuffer &rbuffer) override;
-  virtual bool OnSend(struct pollfd &pfd, const SocketCommon &socket) override;
+  virtual void Stop() override;
 
  private:
   static const int kTagHeader = 1;
   static const int kTagBody = 2;
+  int my_owner_id_;
+  BlockManager &block_mgr_;
+  std::thread client_thread_;
+
+ protected:
+  virtual bool OnRecv(struct pollfd &pfd, const SocketCommon &socket, RecvBuffer &rbuffer) override;
+  virtual bool OnSend(struct pollfd &pfd, const SocketCommon &socket) override;
 
 };
 

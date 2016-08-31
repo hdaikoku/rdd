@@ -23,9 +23,11 @@ class RDDStub {
 
   void AddPartition(int owner, int partition_id);
 
-  void GetPartitionIDsByOwner(int owner, std::vector<int> &partition_ids);
-
   void GetOwners(std::vector<int> &owners) const;
+
+  void StartShuffleService() const;
+
+  void StopShuffleService() const;
 
   void Print() const;
 

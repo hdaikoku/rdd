@@ -56,7 +56,7 @@ std::unique_ptr<TextFileRDDStub> TextFileRDDStub::NewInstance(RDDContext &rc, co
 
   for (const auto &i : indices) {
     rc.SetTimeout(i.first, 6000);
-    fs.push_back(rc.Call("textfile", i.first, rdd_id, partition_id, filename, i.second));
+    fs.push_back(rc.Call("textfile", i.first, rdd_id, partition_id, rdd->partitions_by_owner_, filename, i.second));
   }
 
   for (auto &f : fs) {

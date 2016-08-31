@@ -5,6 +5,7 @@
 #ifndef PROJECT_RDD_ENV_H
 #define PROJECT_RDD_ENV_H
 
+#include "worker/shuffle/shuffle_service.h"
 #include "worker/shuffle/block_manager.h"
 
 class RDDEnv {
@@ -18,11 +19,16 @@ class RDDEnv {
 
   BlockManager &GetBlockManager();
 
+  void RegisterShuffleService(std::unique_ptr<ShuffleService> &&shuffle_service);
+
+  void StopShuffleServices();
+
  private:
   RDDEnv() = default;
   ~RDDEnv() = default;
 
   BlockManager block_manager_;
+  std::vector<std::unique_ptr<ShuffleService>> shuffle_services_;
 
 };
 

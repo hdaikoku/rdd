@@ -57,3 +57,15 @@ bool FullyConnectedServer::OnSend(struct pollfd &pfd,
 bool FullyConnectedServer::IsRunning() {
   return partitions_by_owner_.size() > 0;
 }
+
+void FullyConnectedServer::Start() {
+  server_thread_ = std::thread([this] {
+    Run();
+  });
+}
+
+void FullyConnectedServer::Stop() {
+  if (server_thread_.joinable()) {
+    server_thread_.join();
+  }
+}

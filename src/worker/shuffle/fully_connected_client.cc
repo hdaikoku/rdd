@@ -59,3 +59,15 @@ bool FullyConnectedClient::OnSend(struct pollfd &pfd, const SocketCommon &socket
 
   return true;
 }
+
+void FullyConnectedClient::Start() {
+  client_thread_ = std::thread([this] {
+    Run();
+  });
+}
+
+void FullyConnectedClient::Stop() {
+  if (client_thread_.joinable()) {
+    client_thread_.join();
+  }
+}

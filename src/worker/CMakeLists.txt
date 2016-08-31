@@ -22,7 +22,7 @@ set(WORKER_SOURCE_FILES
 
 add_executable(RDDWorker ${WORKER_SOURCE_FILES})
 
-target_link_libraries(RDDWorker msgpack jubatus_mpio jubatus_msgpack-rpc dl tbb)
+target_link_libraries(RDDWorker msgpack jubatus_mpio jubatus_msgpack-rpc dl tbb pthread)
 
 if (USE_RDMA)
     add_definitions(-DUSE_RDMA)

@@ -15,11 +15,11 @@
 class SocketClientPool {
  public:
 
-  SocketClientPool() {}
+  SocketClientPool(const std::vector<std::pair<std::string, std::string>> &servers) : servers_(servers) {}
 
-  bool Run(const std::vector<std::pair<std::string, std::string>> &servers, int timeout = 3 * 60 * 1000) {
+  bool Run(int timeout = 3 * 60 * 1000) {
     std::vector<struct pollfd> fds;
-    for (const auto &server : servers) {
+    for (const auto &server : servers_) {
       std::unique_ptr<SocketClient> client(new SocketClient(server.first, server.second));
       auto sockfd = client->Connect();
       if (sockfd < 0) {
@@ -83,7 +83,7 @@ class SocketClientPool {
                   fds.end()
         );
       }
-      std::this_thread::sleep_for(std::chrono::nanoseconds(500));
+      std::this_thread::sleep_for(std::chrono::microseconds(500));
     }
 
     return true;
@@ -159,6 +159,7 @@ class SocketClientPool {
   }
 
  private:
+  std::vector<std::pair<std::string, std::string>> servers_;
   std::unordered_map<int, RecvBuffer> recv_buffers_;
   std::unordered_map<int, std::unique_ptr<SocketClient>> clients_;
 

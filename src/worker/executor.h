@@ -14,6 +14,8 @@
 
 class Executor: public msgpack::rpc::dispatcher {
 
+  using PartitionsByOwner = std::unordered_map<int, std::vector<int>>;
+
  public:
   Executor(const std::string &addr, int job_port)
       : addr_(addr), job_port_(job_port) { }
@@ -26,13 +28,14 @@ class Executor: public msgpack::rpc::dispatcher {
   int my_executor_id_;
   std::vector<WorkerContext> executors_;
   std::unordered_map<int, tbb::concurrent_vector<std::unique_ptr<RDD>>> rdds_;
+  std::unordered_map<int, PartitionsByOwner> rdd_contexts_;
 
   rdd_rpc::Response Hello(msgpack::rpc::request &req);
   rdd_rpc::Response TextFile(msgpack::rpc::request &req);
   rdd_rpc::Response Map(msgpack::rpc::request &req);
-  rdd_rpc::Response MapWithShuffle(msgpack::rpc::request &req);
   rdd_rpc::Response ShuffleSrv(msgpack::rpc::request &req);
   rdd_rpc::Response ShuffleCli(msgpack::rpc::request &req);
+  rdd_rpc::Response StopShuffle(msgpack::rpc::request &req);
   rdd_rpc::Response Reduce(msgpack::rpc::request &req);
   rdd_rpc::Response GroupBy(msgpack::rpc::request &req);
   rdd_rpc::Response Print(msgpack::rpc::request &req);

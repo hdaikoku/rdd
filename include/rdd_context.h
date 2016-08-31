@@ -23,13 +23,13 @@ class RDDContext {
       return nullptr;
     }
 
-    std::vector<WorkerContext> slaves;
+    std::vector<WorkerContext> workers;
     std::string addr, job_port, data_port;
     while (ifs >> addr >> job_port >> data_port) {
-      slaves.emplace_back(addr, job_port, data_port);
+      workers.emplace_back(addr, job_port, data_port);
     }
 
-    return std::unique_ptr<RDDContext>(new RDDContext(slaves));
+    return std::unique_ptr<RDDContext>(new RDDContext(workers));
   }
 
   virtual ~RDDContext() {
@@ -46,6 +46,11 @@ class RDDContext {
   std::string GetExecutorPortById(const int &id) const;
 
   void SetTimeout(int dest, unsigned int timeout);
+
+  // Calls the endpoint specified by dest, with no arguments
+  msgpack::rpc::future Call(const std::string &func, const int &dest) {
+    return sp_.get_session(executors_[dest].GetAddr(), std::stoi(executors_[dest].GetJobPort())).call(func);
+  }
 
   // Calls the endpoint specified by dest, with one argument
   template<typename A1>
