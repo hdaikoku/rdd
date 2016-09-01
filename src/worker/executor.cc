@@ -87,11 +87,11 @@ rdd_rpc::Response Executor::TextFile(msgpack::rpc::request &req) {
 
   RDDEnv::GetInstance().GetBlockManager().SetNumBuffers(num_partitions);
 
-  tbb::parallel_for_each(indices.begin(), indices.end(), [&](const TextFileIndex &index) {
+  for (const auto &index : indices) {
     rdds_[rdd_id].push_back(
         std::unique_ptr<TextFileRDD>(new TextFileRDD(num_partitions, filename, index))
     );
-  });
+  }
 
   rdd_contexts_.emplace(std::make_pair(rdd_id, partitions_by_owner));
 
@@ -129,14 +129,12 @@ rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
   ParseParams(req, shuffle_type, rdd_id, client_id);
 
   if (shuffle_type == "pairwise") {
-    std::cerr << "Starting PairwiseShuffleServer" << std::endl;
     auto partition_ids = rdd_contexts_[rdd_id][client_id];
 
     PairwiseShuffleServer shuffle_server(my_executor_id_);
     shuffle_server.Start(partition_ids, executors_[my_executor_id_].GetDataPort());
 
   } else if (shuffle_type == "fully-connected") {
-    std::cerr << "Starting FullyConnectedShuffleServer" << std::endl;
     auto partitions_by_owner = rdd_contexts_[rdd_id];
     partitions_by_owner.erase(my_executor_id_);
 
@@ -156,14 +154,12 @@ rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
   ParseParams(req, shuffle_type, rdd_id, server_id);
 
   if (shuffle_type == "pairwise") {
-    std::cerr << "Starting PairwiseShuffleClient" << std::endl;
     auto partition_ids = rdd_contexts_[rdd_id][server_id];
 
     PairwiseShuffleClient shuffle_client(my_executor_id_);
     shuffle_client.Start(partition_ids, executors_[server_id].GetAddr(), executors_[server_id].GetDataPort());
 
   } else if (shuffle_type == "fully-connected") {
-    std::cerr << "Starting FullyConnectedShuffleClient" << std::endl;
     auto partitions_by_owner = rdd_contexts_[rdd_id];
 
     std::vector<std::pair<std::string, std::string>> executors;
