@@ -19,7 +19,7 @@ class RDDEnv {
 
   BlockManager &GetBlockManager();
 
-  void RegisterShuffleService(std::unique_ptr<ShuffleService> &&shuffle_service);
+  void RegisterShuffleService(std::unique_ptr<ShuffleService> shuffle_service);
 
   void StopShuffleServices();
 

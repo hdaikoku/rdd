@@ -25,7 +25,7 @@ class RDD {
   virtual void PutBlocks(BlockManager &block_mgr) = 0;
   virtual void GetBlocks(BlockManager &block_mgr) = 0;
 
-  virtual void Print() = 0;
+  virtual void Print() const = 0;
 
   int GetNumPartitions() const {
     return num_partitions_;

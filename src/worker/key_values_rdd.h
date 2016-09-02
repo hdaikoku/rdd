@@ -92,7 +92,7 @@ class KeyValuesRDD: public RDD {
     }
   }
 
-  virtual void Print() override {
+  virtual void Print() const override {
     for (const auto kvs : key_values_) {
       std::cout << ToString(kvs.first) << ": ";
       for (const auto v : kvs.second) {

@@ -63,7 +63,7 @@ class KeyValueRDD: public RDD {
   virtual void PutBlocks(BlockManager &block_mgr) override {}
   virtual void GetBlocks(BlockManager &block_mgr) override { }
 
-  virtual void Print() override {
+  virtual void Print() const override {
     for (const auto kvs : key_values_) {
       std::cout << ToString(kvs.first) << ": " << kvs.second << std::endl;
     }
