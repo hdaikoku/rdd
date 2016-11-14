@@ -15,9 +15,11 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
   GetOwners(owners);
   auto overlap = rc_.OverlapShuffle();
   std::string dl_mapper_path(realpath(dl_mapper.c_str(), NULL));
-  std::string dl_combiner_path(realpath(dl_combiner.c_str(), NULL));
-  if (dl_combiner == "") {
-    dl_combiner_path = "";
+  std::string dl_combiner_path;
+  if (dl_combiner != "") {
+    dl_combiner_path.assign(realpath(dl_combiner.c_str(), NULL));
+  } else {
+    dl_combiner_path.assign(dl_combiner);
   }
 
   if (overlap) {
