@@ -3,7 +3,7 @@
 //
 
 #include <rdd_context.h>
-
+#include <stdlib.h>
 #include "rdd_rpc.h"
 
 std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_mapper,
@@ -14,6 +14,11 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
   std::vector<int> owners;
   GetOwners(owners);
   auto overlap = rc_.OverlapShuffle();
+  std::string dl_mapper_path(realpath(dl_mapper.c_str(), NULL));
+  std::string dl_combiner_path(realpath(dl_combiner.c_str(), NULL));
+  if (dl_combiner == "") {
+    dl_combiner_path = "";
+  }
 
   if (overlap) {
     StartShuffleService();
@@ -21,7 +26,7 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
 
   for (const auto &p : partitions_by_owner_) {
     rc_.SetTimeout(p.first, 600);
-    fs.push_back(rc_.Call("map", p.first, rdd_id_, dl_mapper, dl_combiner, new_rdd_id));
+    fs.push_back(rc_.Call("map", p.first, rdd_id_, dl_mapper_path, dl_combiner_path, new_rdd_id));
   }
 
   for (auto &f : fs) {

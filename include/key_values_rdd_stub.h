@@ -23,7 +23,7 @@ class KeyValuesRDDStub: public RDDStub {
 
   void GroupBy();
 
-  std::unique_ptr<KeyValueRDDStub> Reduce(const std::string &dl_filename);
+  std::unique_ptr<KeyValueRDDStub> Reduce(const std::string &dl_reducer);
 
   bool Shuffle();
 
