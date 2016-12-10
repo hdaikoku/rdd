@@ -17,8 +17,8 @@ class Executor: public msgpack::rpc::dispatcher {
   using PartitionsByOwner = std::unordered_map<int, std::vector<int>>;
 
  public:
-  Executor(const std::string &addr, int job_port)
-      : addr_(addr), job_port_(job_port) { }
+  Executor(const std::string &addr, int job_port, int num_threads)
+      : addr_(addr), job_port_(job_port), scheduler_init_(num_threads) {}
 
   virtual void dispatch(msgpack::rpc::request req) override;
 
@@ -26,6 +26,7 @@ class Executor: public msgpack::rpc::dispatcher {
   std::string addr_;
   int job_port_;
   int my_executor_id_;
+  tbb::task_scheduler_init scheduler_init_;
   std::vector<WorkerContext> executors_;
   std::unordered_map<int, tbb::concurrent_vector<std::unique_ptr<RDD>>> rdds_;
   std::unordered_map<int, PartitionsByOwner> rdd_contexts_;
