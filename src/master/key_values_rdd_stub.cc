@@ -25,17 +25,18 @@ void KeyValuesRDDStub::GroupBy() {
   }
 }
 
-std::unique_ptr<KeyValueRDDStub> KeyValuesRDDStub::Reduce(const std::string &dl_filename) {
+std::unique_ptr<KeyValueRDDStub> KeyValuesRDDStub::Reduce(const std::string &dl_reducer) {
   if (!shuffled_) {
     shuffled_ = Shuffle();
   }
 
   std::vector<msgpack::rpc::future> fs;
   int new_rdd_id = rc_.GetNewRddId();
-
+  std::string dl_reducer_path(realpath(dl_reducer.c_str(), NULL));
+  
   for (const auto &p : partitions_by_owner_) {
     rc_.SetTimeout(p.first, 600);
-    fs.push_back(rc_.Call("reduce", p.first, rdd_id_, dl_filename, new_rdd_id));
+    fs.push_back(rc_.Call("reduce", p.first, rdd_id_, dl_reducer_path, new_rdd_id));
   }
 
   for (auto &f : fs) {
