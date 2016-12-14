@@ -7,7 +7,7 @@
 #include "word_count_mapper.h"
 
 void WordCountMapper::Map(google::dense_hash_map<std::string, std::vector<int>> &kvs,
-                          const long long int &key,
+                          const int64_t &key,
                           const std::string &value) {
   size_t cur = 0, pos;
   while ((pos = value.find_first_of(' ', cur)) != value.npos) {

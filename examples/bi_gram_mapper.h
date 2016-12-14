@@ -8,19 +8,19 @@
 #include <mapper.h>
 
 class BiGramMapper:
-    public Mapper<std::string, int, long long int, std::string> {
+    public Mapper<std::string, int, int64_t, std::string> {
 
  public:
 
   virtual void Map(
       google::dense_hash_map<std::string, std::vector<int>> &kvs,
-      const long long int &key,
+      const int64_t &key,
       const std::string &value) override;
 
 };
 
-extern "C" std::unique_ptr<Mapper<std::string, int, long long int, std::string>> Create() {
-  return std::unique_ptr<Mapper<std::string, int, long long int, std::string>>(new BiGramMapper);
+extern "C" std::unique_ptr<Mapper<std::string, int, int64_t, std::string>> Create() {
+  return std::unique_ptr<Mapper<std::string, int, int64_t, std::string>>(new BiGramMapper);
 }
 
 
