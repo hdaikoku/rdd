@@ -8,7 +8,7 @@
 
 void WordCountMapper::Map(google::dense_hash_map<std::string, std::vector<int>> &kvs,
                           const int64_t &key,
-                          const std::string &value) {
+                          const std::string &value) const {
   size_t cur = 0, pos;
   while ((pos = value.find_first_of(' ', cur)) != value.npos) {
     kvs[value.substr(cur, pos - cur)].emplace_back(1);

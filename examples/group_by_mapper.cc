@@ -6,7 +6,7 @@
 
 void GroupByMapper::Map(google::dense_hash_map<int, std::vector<std::string>> &kvs,
                         const int64_t &key,
-                        const std::string &value) {
+                        const std::string &value) const {
   size_t cur = 0, pos;
   while ((pos = value.find_first_of(' ', cur)) != value.npos) {
     auto word = value.substr(cur, pos - cur);

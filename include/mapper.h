@@ -18,7 +18,7 @@ class Mapper {
   virtual ~Mapper() { }
 
   virtual void Map(google::dense_hash_map<NK, std::vector<NV>> &kvs,
-                   const K &key, const V &value) = 0;
+                   const K &key, const V &value) const = 0;
 
 };
 

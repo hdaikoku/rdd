@@ -14,7 +14,7 @@ class Reducer {
   Reducer() { }
   virtual ~Reducer() { }
 
-  virtual std::pair<K, V> Reduce(const K &key, const std::vector<V> &values) = 0;
+  virtual std::pair<K, V> Reduce(const K &key, const std::vector<V> &values) const = 0;
 };
 
 template<typename K, typename V>

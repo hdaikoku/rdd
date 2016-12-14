@@ -15,7 +15,7 @@ class WordCountMapper: public Mapper<std::string, int, int64_t, std::string> {
   virtual void Map(
       google::dense_hash_map<std::string, std::vector<int>> &kvs,
       const int64_t &key,
-      const std::string &value) override;
+      const std::string &value) const override;
 
 };
 

@@ -11,7 +11,7 @@
 class WordCountReducer: public Reducer<std::string, int> {
  public:
 
-  virtual std::pair<std::string, int> Reduce(const std::string &key, const std::vector<int> &values) override;
+  virtual std::pair<std::string, int> Reduce(const std::string &key, const std::vector<int> &values) const override;
 
 };
 

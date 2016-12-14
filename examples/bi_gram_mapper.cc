@@ -6,7 +6,7 @@
 
 void BiGramMapper::Map(google::dense_hash_map<std::string, std::vector<int>> &kvs,
                        const int64_t &key,
-                       const std::string &value) {
+                       const std::string &value) const {
   size_t cur = 0, p1, p2 = 0;
   p1 = value.find_first_of(' ', cur);
   while (true) {
