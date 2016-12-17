@@ -17,7 +17,7 @@ std::unique_ptr<TextFileRDDStub> TextFileRDDStub::NewInstance(RDDContext &rc, co
   auto partition_id = 0;
   auto num_slaves = rc.GetNumExecutors();
   // default chunk size: 128 MiB
-  auto default_chunk_size = (1 << 25);
+  auto default_chunk_size = (1 << 27);
 
   std::ifstream ifs(filename);
   if (!ifs) {
