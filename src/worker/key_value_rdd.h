@@ -31,22 +31,12 @@ class KeyValueRDD: public RDD {
       : RDD(num_partitions, partition_id), key_values_(key_values) { }
 
   template<typename NK, typename NV>
-  std::unique_ptr<KeyValuesRDD<NK, NV>> Map(const std::string &dl_filename) {
-    UDF lib_mapper(dl_filename);
-
-    auto mapper_factory = lib_mapper.LoadFunc<CreateMapper<NK, NV, K, V>>("Create");
-    if (mapper_factory == nullptr) {
-      std::cerr << "dlsym" << std::endl;
-      return nullptr;
-    }
-
-    auto mapper = mapper_factory();
-
+  std::unique_ptr<KeyValuesRDD<NK, NV>> Map(const Mapper<NK, NV, K, V> &mapper) {
     google::dense_hash_map<NK, std::vector<NV>> kvs;
     kvs.set_empty_key("");
 
     for (const auto &kv : key_values_) {
-      mapper->Map(kvs, kv.first, kv.second);
+      mapper.Map(kvs, kv.first, kv.second);
     }
 
     return std::unique_ptr<KeyValuesRDD<NK, NV>>(new KeyValuesRDD<NK, NV>(num_partitions_,

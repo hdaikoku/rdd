@@ -3,7 +3,6 @@
 //
 
 #include <rdd_context.h>
-#include <stdlib.h>
 #include "rdd_rpc.h"
 
 std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_mapper,
@@ -28,7 +27,11 @@ std::unique_ptr<KeyValuesRDDStub> KeyValueRDDStub::Map(const std::string &dl_map
 
   for (const auto &p : partitions_by_owner_) {
     rc_.SetTimeout(p.first, 600);
-    fs.push_back(rc_.Call("map", p.first, rdd_id_, dl_mapper_path, dl_combiner_path, new_rdd_id));
+    if (dl_combiner_path == "") {
+      fs.push_back(rc_.Call("map", p.first, rdd_id_, dl_mapper_path, new_rdd_id));
+    } else {
+      fs.push_back(rc_.Call("map_combine", p.first, rdd_id_, dl_mapper_path, dl_combiner_path, new_rdd_id));
+    }
   }
 
   for (auto &f : fs) {

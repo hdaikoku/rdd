@@ -24,19 +24,9 @@ class KeyValuesRDD: public RDD {
   KeyValuesRDD(int num_partitions, int partition_id, const google::dense_hash_map<K, std::vector<V>> &key_values)
       : RDD(num_partitions, partition_id), key_values_(key_values) { }
 
-  bool Combine(const std::string &dl_filename) {
-    UDF lib_reducer(dl_filename);
-
-    auto reducer_factory = lib_reducer.LoadFunc<CreateReducer<K, V>>("Create");
-    if (reducer_factory == nullptr) {
-      std::cerr << "dlsym" << std::endl;
-      return false;
-    }
-
-    auto reducer = reducer_factory();
-
+  bool Combine(const Reducer<K, V> &combiner) {
     for (const auto &kv : key_values_) {
-      auto combined = reducer->Reduce(kv.first, kv.second);
+      auto combined = combiner.Reduce(kv.first, kv.second);
       key_values_[combined.first].clear();
       key_values_[combined.first].push_back(combined.second);
     }
@@ -44,22 +34,12 @@ class KeyValuesRDD: public RDD {
     return true;
   }
 
-  std::unique_ptr<KeyValueRDD<K, V>> Reduce(const std::string &dl_filename) {
-    UDF lib_reducer(dl_filename);
-
-    auto reducer_factory = lib_reducer.LoadFunc<CreateReducer<K, V>>("Create");
-    if (reducer_factory == nullptr) {
-      std::cerr << "dlsym" << std::endl;
-      return nullptr;
-    }
-
-    auto reducer = reducer_factory();
-
+  std::unique_ptr<KeyValueRDD<K, V>> Reduce(const Reducer<K, V> &reducer) {
     google::dense_hash_map<K, V> kvs;
     kvs.set_empty_key("");
 
     for (const auto &kv : key_values_) {
-      kvs.insert(reducer->Reduce(kv.first, kv.second));
+      kvs.insert(reducer.Reduce(kv.first, kv.second));
     }
 
     return std::unique_ptr<KeyValueRDD<K, V>>(new KeyValueRDD<K, V>(num_partitions_,

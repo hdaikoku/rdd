@@ -11,11 +11,12 @@
 
 class UDF {
  public:
-  UDF(const std::string &dl_filename) {
-    lib_ = dlopen(dl_filename.c_str(), RTLD_LAZY);
-    if (!lib_) {
-      std::cerr << "Cannot load library: " << dlerror() << std::endl;
+  static std::unique_ptr<UDF> NewInstance(const std::string &dl_path) {
+    auto lib = dlopen(dl_path.c_str(), RTLD_LAZY);
+    if (!lib) {
+      return nullptr;
     }
+    return std::unique_ptr<UDF>(new UDF(lib));
   }
 
   virtual ~UDF() {
@@ -44,6 +45,7 @@ class UDF {
  private:
   void *lib_;
 
+  UDF(void *lib) : lib_(lib) {}
 };
 
 #endif //PROJECT_UDF_H

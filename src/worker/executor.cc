@@ -29,6 +29,10 @@ void Executor::dispatch(msgpack::rpc::request req) {
       // Map specified RDD
       req.result(Map(req));
 
+    } else if (method == "map_combine") {
+      // Map specified RDD (w/ combiner)
+      req.result(MapCombine(req));
+
     } else if (method == "shuffle_srv") {
       // shuffle, act as a server
       req.result(ShuffleSrv(req));
@@ -100,17 +104,78 @@ rdd_rpc::Response Executor::TextFile(msgpack::rpc::request &req) {
 
 rdd_rpc::Response Executor::Map(msgpack::rpc::request &req) {
   int rdd_id, new_rdd_id;
-  std::string dl_mapper, dl_combiner;
-  ParseParams(req, rdd_id, dl_mapper, dl_combiner, new_rdd_id);
+  std::string dl_mapper;
+  ParseParams(req, rdd_id, dl_mapper, new_rdd_id);
+
+  // load mapper library
+  auto lib_mapper = UDF::NewInstance(dl_mapper);
+  if (!lib_mapper) {
+    std::cerr << "failed to load mapper library: " << dlerror() << std::endl;
+    return rdd_rpc::Response::ERR;
+  }
+  auto mapper_factory = lib_mapper->LoadFunc<CreateMapper<std::string, int, int64_t, std::string>>("Create");
+  if (mapper_factory == nullptr) {
+    std::cerr << "failed to load Map function" << std::endl;
+    return rdd_rpc::Response::ERR;
+  }
+  auto mapper = mapper_factory();
 
   auto &rdds = rdds_[rdd_id];
   auto &new_rdds = rdds_[new_rdd_id];
   tbb::parallel_for_each(rdds.begin(), rdds.end(), [&](const std::unique_ptr<RDD> &rdd) {
     // TODO dirty hack :)
     auto mapped = static_cast<TextFileRDD *>(rdd.get())
-        ->Map<std::string, int>(dl_mapper);
+        ->Map<std::string, int>(*mapper);
+    mapped->PutBlocks(RDDEnv::GetInstance().GetBlockManager());
+    new_rdds.push_back(std::move(mapped));
+  });
+
+  RDDEnv::GetInstance().GetBlockManager().Finalize();
+
+  rdd_contexts_.emplace(std::make_pair(new_rdd_id, rdd_contexts_[rdd_id]));
+
+  return rdd_rpc::Response::OK;
+}
+
+rdd_rpc::Response Executor::MapCombine(msgpack::rpc::request &req) {
+  int rdd_id, new_rdd_id;
+  std::string dl_mapper, dl_combiner;
+  ParseParams(req, rdd_id, dl_mapper, dl_combiner, new_rdd_id);
+
+  // load mapper library
+  auto lib_mapper = UDF::NewInstance(dl_mapper);
+  if (!lib_mapper) {
+    std::cerr << "failed to load mapper library: " << dlerror() << std::endl;
+    return rdd_rpc::Response::ERR;
+  }
+  auto mapper_instance = lib_mapper->LoadFunc<CreateMapper<std::string, int, int64_t, std::string>>("Create");
+  if (mapper_instance == nullptr) {
+    std::cerr << "failed to load Map function" << std::endl;
+    return rdd_rpc::Response::ERR;
+  }
+  auto mapper = mapper_instance();
+
+  // load combiner library
+  auto lib_combiner = UDF::NewInstance(dl_combiner);
+  if (!lib_combiner) {
+    std::cerr << "failed to load combiner library: " << dlerror() << std::endl;
+    return rdd_rpc::Response::ERR;
+  }
+  auto combiner_instance = lib_combiner->LoadFunc<CreateReducer<std::string, int>>("Create");
+  if (combiner_instance == nullptr) {
+    std::cerr << "failed to load Reduce function" << std::endl;
+    return rdd_rpc::Response::ERR;
+  }
+  auto combiner = combiner_instance();
+
+  auto &rdds = rdds_[rdd_id];
+  auto &new_rdds = rdds_[new_rdd_id];
+  tbb::parallel_for_each(rdds.begin(), rdds.end(), [&](const std::unique_ptr<RDD> &rdd) {
+    // TODO dirty hack :)
+    auto mapped = static_cast<TextFileRDD *>(rdd.get())
+        ->Map<std::string, int>(*mapper);
     if (dl_combiner != "") {
-      mapped->Combine(dl_combiner);
+      mapped->Combine(*combiner);
     }
     mapped->PutBlocks(RDDEnv::GetInstance().GetBlockManager());
     new_rdds.push_back(std::move(mapped));
@@ -190,12 +255,25 @@ rdd_rpc::Response Executor::Reduce(msgpack::rpc::request &req) {
   std::string dl_reducer;
   ParseParams(req, rdd_id, dl_reducer, new_rdd_id);
 
+  // load reducer library
+  auto lib_reducer = UDF::NewInstance(dl_reducer);
+  if (!lib_reducer) {
+    std::cerr << "failed to load mapper library: " << dlerror() << std::endl;
+    return rdd_rpc::Response::ERR;
+  }
+  auto reducer_instance = lib_reducer->LoadFunc<CreateReducer<std::string, int>>("Create");
+  if (reducer_instance == nullptr) {
+    std::cerr << "failed to load Map function" << std::endl;
+    return rdd_rpc::Response::ERR;
+  }
+  auto reducer = reducer_instance();
+
   auto &rdds = rdds_[rdd_id];
   auto &new_rdds = rdds_[new_rdd_id];
   tbb::parallel_for_each(rdds.begin(), rdds.end(), [&](const std::unique_ptr<RDD> &rdd) {
     auto kvs_rdd = static_cast<KeyValuesRDD<std::string, int> *>(rdd.get());
     kvs_rdd->GetBlocks(RDDEnv::GetInstance().GetBlockManager());
-    new_rdds.push_back(kvs_rdd->Reduce(dl_reducer));
+    new_rdds.push_back(kvs_rdd->Reduce(*reducer));
   });
 
   rdd_contexts_.emplace(std::make_pair(new_rdd_id, rdd_contexts_[rdd_id]));
