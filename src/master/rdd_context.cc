@@ -23,7 +23,7 @@ void RDDContext::Init() {
   for (executor_id = 0; executor_id < num_executors; executor_id++) {
     if (fs[executor_id].get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
       std::cerr << "could not connect to "
-          << executors_[executor_id].GetAddr() << ":" << executors_[executor_id].GetJobPort() << std::endl;
+                << executors_[executor_id].GetAddr() << ":" << executors_[executor_id].GetRPCPort() << std::endl;
     }
   }
 }
@@ -52,5 +52,5 @@ std::string RDDContext::GetShuffleType() const {
 }
 
 void RDDContext::SetTimeout(int dest, unsigned int timeout) {
-  sp_.get_session(executors_[dest].GetAddr(), std::stoi(executors_[dest].GetJobPort())).set_timeout(timeout);
+  sp_.get_session(executors_[dest].GetAddr(), executors_[dest].GetRPCPort()).set_timeout(timeout);
 }

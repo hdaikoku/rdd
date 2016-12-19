@@ -12,11 +12,12 @@ set(WORKER_SOURCE_FILES
         net/socket_server.h
         net/socket_client_pool.h
         net/socket_non_blocking_server.h
+        net/socket_session_pool.h
+        net/socket_session_acceptor.h
         shuffle/block_manager.h shuffle/block_manager.cc
         shuffle/fully_connected_client.h shuffle/fully_connected_client.cc
         shuffle/fully_connected_server.h shuffle/fully_connected_server.cc
-        shuffle/pairwise_shuffle_server.h shuffle/pairwise_shuffle_server.cc
-        shuffle/pairwise_shuffle_client.h shuffle/pairwise_shuffle_client.cc
+        shuffle/pairwise_shuffle_service.h shuffle/pairwise_shuffle_service.cc
         udf.h
         rdd_env.cc rdd_env.h)
 

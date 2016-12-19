@@ -4,6 +4,16 @@
 
 #include "worker/shuffle/fully_connected_client.h"
 
+bool FullyConnectedClient::Init(const std::vector<WorkerContext> &workers) {
+  for (const auto &w : workers) {
+    if (AddClient(w.GetAddr(), w.GetShufflePort()) == ERR_CONN_FAILED) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 bool FullyConnectedClient::OnRecv(struct pollfd &pfd,
                                   const SocketCommon &socket,
                                   SocketClientPool::RecvBuffer &rbuffer) {

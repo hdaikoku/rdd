@@ -13,53 +13,65 @@
 
 #include "socket_server.h"
 
+#define ERR_POLL_TIMED_OUT -1
+#define ERR_POLL_FAILED    -2
+#define ERR_ACCEPT_FAILED  -3
+
 class SocketNonBlockingServer: public SocketServer {
  public:
 
-  SocketNonBlockingServer(const std::string &server_port)
-      : SocketServer(server_port), queue_size_(0) {}
+  SocketNonBlockingServer(const std::string &log_tag = "SocketNonBlockingServer")
+      : SocketServer(log_tag), queue_size_(0), cleanup_fds_(false) {}
+
+  bool Init(uint16_t server_port) {
+    int listen_fd = Listen(server_port);
+    if (listen_fd < 0) {
+      return false;
+    }
+
+    SetNonBlocking(true);
+    fds_.emplace_back(pollfd{listen_fd, POLLIN, 0});
+    return true;
+  }
 
   // default poll() timeout: 3 mins
-  bool Run(int timeout = 3 * 60 * 1000) {
-    auto listen_fd = Listen();
-    SetNonBlocking(true);
-    fds.emplace_back(pollfd{listen_fd, POLLIN | POLLHUP | POLLERR, 0});
+  int Run(int timeout = 3 * 60 * 1000) {
+    int listen_fd = GetListenSocket();
 
     while (true) {
-      auto num_fds = fds.size();
+      auto num_fds = fds_.size();
       if (num_fds == 0) {
         break;
       }
 
-      bool cleanup = false;
+      cleanup_fds_ = false;
       if (!IsRunning() && queue_size_ == 0) {
         break;
       }
 
-      auto rc = S_POLL(fds.data(), num_fds, timeout);
+      auto rc = S_POLL(fds_.data(), num_fds, timeout);
       if (rc < 0) {
         perror("poll");
-        break;
+        return ERR_POLL_FAILED;
       } else if (rc == 0) {
-        std::cerr << "poll timed out" << std::endl;
-        break;
+        return ERR_POLL_TIMED_OUT;
       }
 
       for (int i = 0; i < num_fds; i++) {
-        if (fds[i].revents == 0) {
+        if (fds_[i].revents == 0) {
           // this file descriptor is not ready yet
           continue;
         }
 
-        auto revents = fds[i].revents;
+        auto revents = fds_[i].revents;
         if (revents & (POLLHUP | POLLERR)) {
           // connection has been closed
-          UnregisterPollingSocket(fds[i]);
-          cleanup = true;
+          LogDebug("connection from " + polling_socks_[fds_[i].fd]->GetPeerNameAsString() + " has been closed");
+          UnregisterPollingSocket(fds_[i]);
           continue;
         }
 
-        if (fds[i].fd == listen_fd) {
+        if (fds_[i].fd == listen_fd) {
           if (!(revents & POLLIN)) {
             continue;
           }
@@ -69,6 +81,7 @@ class SocketNonBlockingServer: public SocketServer {
             if (!socket) {
               if (errno != EWOULDBLOCK) {
                 perror("accept");
+                return ERR_ACCEPT_FAILED;
               }
               break;
             }
@@ -77,33 +90,40 @@ class SocketNonBlockingServer: public SocketServer {
         } else {
           // connected file descriptor is ready
           if (revents & POLLOUT) {
-            auto &queue = send_queues_[fds[i].fd];
-            if (OnSend(fds[i], *polling_socks_[fds[i].fd], queue.front())) {
-              auto buf = std::move(queue.front());
-              queue.pop();
-              queue_size_--;
-              if (queue.empty()) {
-                fds[i].events &= ~POLLOUT;
+            auto &queue = send_queues_[fds_[i].fd];
+            if (!OnSend(fds_[i], *polling_socks_[fds_[i].fd], queue.front())) {
+              // something went wrong, connection should be closed
+              UnregisterPollingSocket(fds_[i]);
+            } else {
+              // have successfully sent some part of the buffer
+              if (queue.front().GetSize() == 0) {
+                // the whole buffer has been sent, buffer should be destroyed
+                auto tmp = std::move(queue.front());
+                queue.pop();
+                queue_size_--;
+                if (queue.empty()) {
+                  fds_[i].events &= ~POLLOUT;
+                }
               }
             }
           }
           if (revents & POLLIN) {
-            if (!OnRecv(fds[i], *polling_socks_[fds[i].fd])) {
-              UnregisterPollingSocket(fds[i]);
-              cleanup = true;
+            if (!OnRecv(fds_[i], *polling_socks_[fds_[i].fd])) {
+              // something went wrong, connection should be closed
+              UnregisterPollingSocket(fds_[i]);
             }
           }
         }
 
-        fds[i].revents = 0;
+        fds_[i].revents = 0;
       }
 
-      if (cleanup) {
-        fds.erase(std::remove_if(fds.begin(), fds.end(),
-                                 [](const struct pollfd &fd) {
+      if (cleanup_fds_) {
+        fds_.erase(std::remove_if(fds_.begin(), fds_.end(),
+                                  [](const struct pollfd &fd) {
                                    return fd.fd == -1;
                                  }),
-                  fds.end()
+                   fds_.end()
         );
       }
     }
@@ -145,6 +165,7 @@ class SocketNonBlockingServer: public SocketServer {
 
   virtual bool OnRecv(struct pollfd &pfd, const SocketCommon &socket) = 0;
   virtual bool OnSend(struct pollfd &pfd, const SocketCommon &socket, SendBuffer &send_buffer) = 0;
+  virtual void OnClose(struct pollfd &pfd) = 0;
   virtual bool IsRunning() = 0;
 
   void ScheduleSend(struct pollfd &pfd, SendBuffer &&buffer) {
@@ -154,20 +175,26 @@ class SocketNonBlockingServer: public SocketServer {
   }
 
  private:
-  std::vector<struct pollfd> fds;
+  std::vector<struct pollfd> fds_;
   std::unordered_map<int, std::unique_ptr<SocketCommon>> polling_socks_;
   std::unordered_map<int, std::queue<SendBuffer>> send_queues_;
   int queue_size_;
+  bool cleanup_fds_;
 
   void RegisterPollingSocket(std::unique_ptr<SocketCommon> socket, short events) {
     auto fd = socket->GetSockFD();
-    fds.emplace_back(pollfd{fd, events, 0});
+    fds_.emplace_back(pollfd{fd, events, 0});
     polling_socks_.emplace(std::make_pair(fd, std::move(socket)));
   }
 
-  void UnregisterPollingSocket(struct pollfd &fd) {
-    polling_socks_.erase(fd.fd);
-    fd.fd = -1;
+  void UnregisterPollingSocket(struct pollfd &pfd) {
+    OnClose(pfd);
+    auto queue_len = send_queues_[pfd.fd].size();
+    send_queues_.erase(pfd.fd);
+    queue_size_ -= queue_len;
+    polling_socks_.erase(pfd.fd);
+    pfd.fd = -1;
+    cleanup_fds_ = true;
   }
 
 };

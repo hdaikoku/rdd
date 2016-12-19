@@ -13,9 +13,8 @@
 
 class FullyConnectedServer: public SocketNonBlockingServer, public ShuffleService {
  public:
-  FullyConnectedServer(const std::string &server_port,
-                       std::unordered_map<int, std::vector<int>> &partitions_by_owner)
-      : SocketNonBlockingServer(server_port), block_mgr_(RDDEnv::GetInstance().GetBlockManager()),
+  FullyConnectedServer(std::unordered_map<int, std::vector<int>> &partitions_by_owner)
+      : block_mgr_(RDDEnv::GetInstance().GetBlockManager()),
         partitions_by_owner_(partitions_by_owner) { }
 
   virtual void Start() override;
@@ -24,6 +23,7 @@ class FullyConnectedServer: public SocketNonBlockingServer, public ShuffleServic
  protected:
   virtual bool OnRecv(struct pollfd &pfd, const SocketCommon &socket) override;
   virtual bool OnSend(struct pollfd &pfd, const SocketCommon &socket, SendBuffer &send_buffer) override;
+  void OnClose(struct pollfd &pfd) override;
   virtual bool IsRunning() override;
 
  private:

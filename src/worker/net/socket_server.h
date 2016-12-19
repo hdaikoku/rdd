@@ -28,29 +28,44 @@
 class SocketServer: public SocketCommon {
  public:
 
-  SocketServer(const std::string &server_port) : server_port_(server_port) {}
+  SocketServer(const std::string log_tag = "SocketServer") : SocketCommon(log_tag), listening_(false) {}
 
-  int Listen() {
+  void Close() override {
+    SocketCommon::Close();
+    listening_ = false;
+  }
+
+  int Listen(uint16_t server_port) {
     struct S_ADDRINFO *result;
 
-    result = InitSocket(nullptr, server_port_.c_str(), AI_PASSIVE);
+    if (listening_) {
+      return sock_fd_;
+    }
+
+    result = InitSocket(nullptr, std::to_string(server_port).c_str(), AI_PASSIVE);
     if (!result) {
       return -1;
     }
 
+    if (!SetReuseAddr()) {
+      return -1;
+    }
+
     if (S_BIND(sock_fd_, S_SRC_ADDR(result), S_SRC_ADDRLEN(result)) == -1) {
-      perror("bind");
+      LogError(errno);
       S_FREEADDRINFO(result);
       return -1;
     }
 
     if (S_LISTEN(sock_fd_, 1024) == -1) {
-      perror("listen");
+      LogError(errno);
       S_FREEADDRINFO(result);
       return -1;
     }
 
     S_FREEADDRINFO(result);
+    listening_ = true;
+    LogInfo("now listening on port " + std::to_string(server_port));
 
     return sock_fd_;
   }
@@ -59,26 +74,27 @@ class SocketServer: public SocketCommon {
     auto sock_fd = S_ACCEPT(sock_fd_, NULL, NULL);
     if (sock_fd < 0) {
       if (errno != EWOULDBLOCK) {
-        perror("accept");
+        LogError(errno);
       }
 
       return nullptr;
     }
 
-    return std::unique_ptr<SocketCommon>(new SocketCommon(sock_fd));
+    return std::unique_ptr<SocketCommon>(new SocketCommon(sock_fd, GetLogTag()));
   }
 
-  virtual bool SetSockOpts() override {
-    if (!SocketCommon::SetSockOpts()) {
-      return false;
-    }
-
-    int val = 1;
-    return (S_SETSOCKOPT(sock_fd_, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(int)) == 0);
+ protected:
+  int GetListenSocket() const {
+    return sock_fd_;
   }
 
  private:
-  std::string server_port_;
+  bool listening_;
+
+  bool SetReuseAddr(bool reuse = true) {
+    int val = reuse ? 1 : 0;
+    return SetSockOpt(SOL_SOCKET, SO_REUSEADDR, val);
+  }
 
 };
 

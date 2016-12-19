@@ -69,3 +69,7 @@ void FullyConnectedServer::Stop() {
     server_thread_.join();
   }
 }
+
+void FullyConnectedServer::OnClose(struct pollfd &pfd) {
+
+}

@@ -21,6 +21,10 @@ class RDDEnv {
 
   void RegisterShuffleService(std::unique_ptr<ShuffleService> shuffle_service);
 
+  void RegisterShuffleServer(std::unique_ptr<ShuffleService> shuffle_server);
+
+  void RegisterShuffleClient(std::unique_ptr<ShuffleService> shuffle_client);
+
   void StopShuffleServices();
 
  private:
@@ -28,6 +32,8 @@ class RDDEnv {
   ~RDDEnv() = default;
 
   BlockManager block_manager_;
+  std::unique_ptr<ShuffleService> shuffle_server_;
+  std::unique_ptr<ShuffleService> shuffle_client_;
   std::vector<std::unique_ptr<ShuffleService>> shuffle_services_;
 
 };

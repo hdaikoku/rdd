@@ -25,21 +25,26 @@
 
 class SocketClient: public SocketCommon {
  public:
-  SocketClient(const std::string &server_addr, const std::string &server_port)
-      : server_addr_(server_addr), server_port_(server_port) {}
+  SocketClient(const std::string &server_addr,
+               uint16_t server_port,
+               const std::string &log_tag = "SocketClient") : SocketCommon(log_tag) {
+    SetPeerName(server_addr, server_port);
+  }
 
   int Connect(int timeout_minutes = 1) {
     struct S_ADDRINFO *result;
 
     auto start = std::chrono::steady_clock::now();
     auto timeout = std::chrono::minutes(timeout_minutes);
+    int backoff_msecs = 1;
     while (true) {
       if (start + timeout < std::chrono::steady_clock::now()) {
         // timed-out
+        LogError("connect timed out (server:" + GetPeerNameAsString() + ")");
         return -1;
       }
 
-      result = InitSocket(server_addr_.c_str(), server_port_.c_str(), 0);
+      result = InitSocket(GetPeerAddr().c_str(), std::to_string(GetPeerPort()).c_str(), 0);
       if (!result) {
         return -1;
       }
@@ -49,10 +54,12 @@ class SocketClient: public SocketCommon {
         S_FREEADDRINFO(result);
         if (errno == ECONNREFUSED) {
           // the server is not ready yet.
-          std::this_thread::sleep_for(std::chrono::milliseconds(1));
+          std::this_thread::sleep_for(std::chrono::milliseconds(backoff_msecs));
+          backoff_msecs = std::min(1000, backoff_msecs * 2);
           continue;
         } else {
           // unrecoverable error.
+          LogError(errno);
           return -1;
         }
       }
@@ -62,13 +69,56 @@ class SocketClient: public SocketCommon {
     }
 
     S_FREEADDRINFO(result);
+    LogDebug("successfully connected to " + GetPeerNameAsString());
 
     return sock_fd_;
   }
 
+  int NonBlockingConnect() {
+    struct S_ADDRINFO *result;
+
+    result = InitSocket(GetPeerAddr().c_str(), std::to_string(GetPeerPort()).c_str(), 0);
+    if (!result) {
+      return -1;
+    }
+    SetNonBlocking(true);
+
+    int ret = -1;
+    if (S_CONNECT(sock_fd_, S_DST_ADDR(result), S_DST_ADDRLEN(result)) == -1) {
+      if (errno == EINPROGRESS) {
+        // expected behaviour for non-blocking connect.
+        LogDebug("connection to " + GetPeerNameAsString() + " will be established later");
+        ret = sock_fd_;
+      } else {
+        // unrecoverable error.
+        LogError(errno);
+        S_CLOSE(sock_fd_);
+      }
+    } else {
+      // this may happen when connection got established immediately.
+      LogDebug("successfully connected to " + GetPeerNameAsString());
+      ret = sock_fd_;
+    }
+
+    S_FREEADDRINFO(result);
+
+    return ret;
+  }
+
+  const std::string &GetServerAddr() const {
+    return GetPeerAddr();
+  }
+
+  uint16_t GetServerPort() const {
+    return GetPeerPort();
+  }
+
  private:
-  std::string server_addr_;
-  std::string server_port_;
+  void SetPeerName(const std::string &addr, uint16_t port) {
+    peer_addr_.assign(addr);
+    peer_port_ = port;
+  }
+
 };
 
 #endif //SOCKET_SOCKET_CLIENT_H

@@ -5,11 +5,11 @@
 #ifndef SLAVERDD_EXECUTOR_H
 #define SLAVERDD_EXECUTOR_H
 
-#include <worker_context.h>
 #include <jubatus/msgpack/rpc/server.h>
 #include <tbb/tbb.h>
 
 #include "rdd_rpc.h"
+#include "worker_context.h"
 #include "worker/rdd.h"
 
 class Executor: public msgpack::rpc::dispatcher {
@@ -27,7 +27,7 @@ class Executor: public msgpack::rpc::dispatcher {
   int job_port_;
   int my_executor_id_;
   tbb::task_scheduler_init scheduler_init_;
-  std::vector<WorkerContext> executors_;
+  std::vector<WorkerContext> worker_contexts_;
   std::unordered_map<int, tbb::concurrent_vector<std::unique_ptr<RDD>>> rdds_;
   std::unordered_map<int, PartitionsByOwner> rdd_contexts_;
 
@@ -35,6 +35,7 @@ class Executor: public msgpack::rpc::dispatcher {
   rdd_rpc::Response TextFile(msgpack::rpc::request &req);
   rdd_rpc::Response Map(msgpack::rpc::request &req);
   rdd_rpc::Response MapCombine(msgpack::rpc::request &req);
+  rdd_rpc::Response PairwiseShuffle(msgpack::rpc::request &req);
   rdd_rpc::Response ShuffleSrv(msgpack::rpc::request &req);
   rdd_rpc::Response ShuffleCli(msgpack::rpc::request &req);
   rdd_rpc::Response StopShuffle(msgpack::rpc::request &req);

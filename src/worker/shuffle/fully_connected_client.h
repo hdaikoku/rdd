@@ -7,6 +7,7 @@
 
 #include <thread>
 #include <vector>
+#include <worker_context.h>
 #include "worker/rdd_env.h"
 #include "worker/net/socket_client_pool.h"
 #include "worker/shuffle/block_manager.h"
@@ -14,9 +15,10 @@
 
 class FullyConnectedClient: public SocketClientPool, public ShuffleService {
  public:
-  FullyConnectedClient(const std::vector<std::pair<std::string, std::string>> &servers,
-                       int my_owner_id)
-      : SocketClientPool(servers), my_owner_id_(my_owner_id), block_mgr_(RDDEnv::GetInstance().GetBlockManager()) {}
+  FullyConnectedClient(int my_owner_id)
+      : my_owner_id_(my_owner_id), block_mgr_(RDDEnv::GetInstance().GetBlockManager()) {}
+
+  bool Init(const std::vector<WorkerContext> &workers);
 
   virtual void Start() override;
 

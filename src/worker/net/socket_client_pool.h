@@ -5,88 +5,135 @@
 #ifndef SOCKET_SOCKET_CLIENT_POOL_H
 #define SOCKET_SOCKET_CLIENT_POOL_H
 
-#include <iostream>
 #include <poll.h>
 #include <vector>
 #include <unordered_map>
 
+#include "logger.h"
 #include "socket_client.h"
 
-class SocketClientPool {
+#define ERR_POLL_TIMED_OUT -1
+#define ERR_POLL_FAILED    -2
+#define ERR_CONN_FAILED    -3
+
+class SocketClientPool : public Logger {
  public:
+  SocketClientPool(const std::string &log_tag = "SocketClientPool") : Logger(log_tag), cleanup_fds_(false) {}
 
-  SocketClientPool(const std::vector<std::pair<std::string, std::string>> &servers) : servers_(servers) {}
-
-  bool Run(int timeout = 3 * 60 * 1000) {
-    std::vector<struct pollfd> fds;
-    for (const auto &server : servers_) {
-      std::unique_ptr<SocketClient> client(new SocketClient(server.first, server.second));
-      auto sockfd = client->Connect();
-      if (sockfd < 0) {
-        std::cerr << "CLIENT: could not connect to one or more servers" << std::endl;
-        return false;
-      }
-
-      client->SetNonBlocking(true);
-      clients_.emplace(std::make_pair(sockfd, std::move(client)));
-      fds.emplace_back(pollfd{sockfd, POLLOUT | POLLHUP | POLLERR, 0});
+  int AddClient(const std::string &addr, uint16_t port) {
+    std::unique_ptr<SocketClient> client(new SocketClient(addr, port));
+    int sock_fd = client->NonBlockingConnect();
+    if (sock_fd < 0) {
+      LogError("failed to establish connection to " + client->GetPeerNameAsString());
+      return ERR_CONN_FAILED;
     }
+    clients_.emplace(std::make_pair(sock_fd, std::move(client)));
+    fds_.emplace_back(pollfd{sock_fd, POLLOUT, 0});
 
+    return 0;
+  }
+
+  int Run(int timeout = 3 * 60 * 1000) {
     while (true) {
-      auto num_fds = fds.size();
+      auto num_fds = fds_.size();
       if (num_fds == 0) {
         break;
       }
 
       cleanup_fds_ = false;
       // default timeout: 3 mins
-      auto rc = S_POLL(fds.data(), num_fds, timeout);
+      auto rc = S_POLL(fds_.data(), num_fds, timeout);
       if (rc < 0) {
-        perror("poll");
-        break;
+        LogError(errno);
+        return ERR_POLL_FAILED;
       } else if (rc == 0) {
-        std::cerr << "poll timed out" << std::endl;
-        break;
+        LogError("poll timed out");
+        return ERR_POLL_TIMED_OUT;
       }
 
       for (int i = 0; i < num_fds; i++) {
-        if (fds[i].revents == 0) {
+        auto &pfd = fds_[i];
+        auto &client = clients_[pfd.fd];
+        auto &revents = pfd.revents;
+
+        if (revents == 0) {
           // this file descriptor is not ready yet
           continue;
+        } else if (revents & (POLLHUP | POLLERR)) {
+          // the socket is hanged-up or on error
+          int val = 0;
+          client->GetSockOpt(SOL_SOCKET, SO_ERROR, val);
+          switch (val) {
+            case 0:
+              // no errors observed
+              break;
+            case ECONNREFUSED: {
+              // connection has not been established yet.
+              // close connection and try again.
+              LogDebug("server " + client->GetPeerNameAsString() + " is not ready yet.");
+              std::string server_addr(client->GetServerAddr());
+              uint16_t server_port = client->GetServerPort();
+              Close(pfd);
+              AddClient(server_addr, server_port);
+              continue;
+            }
+            default:
+              // unrecoverable error.
+              LogError(val);
+              LogError("connection to " + client->GetPeerNameAsString() + " is being closed on error");
+              Close(pfd);
+              return ERR_CONN_FAILED;
+          }
         }
 
-        auto revents = fds[i].revents;
-        if (revents & (POLLHUP | POLLERR)) {
-          // connection has been closed
-          Close(fds[i]);
-          continue;
-        } else if (revents & POLLOUT) {
-          if (OnSend(fds[i], *clients_[fds[i].fd])) {
-            fds[i].events &= ~POLLOUT;
+        if (revents & POLLOUT) {
+          int val = 0;
+          client->GetSockOpt(SOL_SOCKET, SO_ERROR, val);
+          switch (val) {
+            case 0:
+              if (OnSend(pfd, *client)) {
+                pfd.events &= ~POLLOUT;
+              }
+              break;
+            case ECONNREFUSED: {
+              // connection has not been established yet.
+              // close connection and try again.
+              LogDebug("server " + client->GetPeerNameAsString() + " is not ready yet.");
+              std::string server_addr(client->GetServerAddr());
+              uint16_t server_port = client->GetServerPort();
+              Close(pfd);
+              AddClient(server_addr, server_port);
+              continue;
+            }
+            default:
+              // unrecoverable error.
+              LogError(val);
+              LogError("connection to " + client->GetPeerNameAsString() + " is being closed on error");
+              Close(pfd);
+              return ERR_CONN_FAILED;
           }
-        } else if (revents & POLLIN) {
-          if (OnRecv(fds[i], *clients_[fds[i].fd], recv_buffers_[fds[i].fd])) {
-            fds[i].events &= ~POLLIN;
+        }
+        if (revents & POLLIN) {
+          if (OnRecv(pfd, *client, recv_buffers_[pfd.fd])) {
+            pfd.events &= ~POLLIN;
           }
-        } else {
-          // ERROR
         }
 
-        fds[i].revents = 0;
+        revents = 0;
       }
 
       if (cleanup_fds_) {
-        fds.erase(std::remove_if(fds.begin(), fds.end(),
-                                 [](const struct pollfd &fd) {
-                                   return fd.fd == -1;
-                                 }),
-                  fds.end()
+        fds_.erase(std::remove_if(fds_.begin(), fds_.end(),
+                                  [](const struct pollfd &fd) {
+                                    return fd.fd == -1;
+                                  }),
+                   fds_.end()
         );
       }
       std::this_thread::yield();
     }
 
-    return true;
+    return 0;
   }
 
  protected:
@@ -142,6 +189,7 @@ class SocketClientPool {
 
   void Close(struct pollfd &pfd) {
     cleanup_fds_ = true;
+    recv_buffers_.erase(pfd.fd);
     clients_.erase(pfd.fd);
     pfd.fd = -1;
   }
@@ -159,11 +207,11 @@ class SocketClientPool {
   }
 
  private:
-  std::vector<std::pair<std::string, std::string>> servers_;
-  std::unordered_map<int, RecvBuffer> recv_buffers_;
   std::unordered_map<int, std::unique_ptr<SocketClient>> clients_;
-
+  std::unordered_map<int, RecvBuffer> recv_buffers_;
+  std::vector<struct pollfd> fds_;
   bool cleanup_fds_;
+
 };
 
 #endif //SOCKET_SOCKET_CLIENT_POOL_H

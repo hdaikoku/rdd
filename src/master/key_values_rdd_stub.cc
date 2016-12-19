@@ -53,27 +53,14 @@ bool KeyValuesRDDStub::Shuffle() {
   if (shuffle_type == "pairwise") {
     std::vector<msgpack::rpc::future> fs;
 
-    int num_steps = partitions_by_owner_.size();
+    for (const auto &p : partitions_by_owner_) {
+      fs.push_back(rc_.Call("pairwise_shuffle", p.first, rdd_id_));
+    }
 
-    std::string shuffle_type("pairwise");
-
-    for (int step = 1; step < num_steps; step++) {
-      for (const auto &p : partitions_by_owner_) {
-        int dest = p.first ^step;
-        if (dest > p.first) {
-          fs.push_back(rc_.Call("shuffle_srv", p.first, shuffle_type, rdd_id_, dest));
-        } else {
-          fs.push_back(rc_.Call("shuffle_cli", p.first, shuffle_type, rdd_id_, dest));
-        }
+    for (auto &f : fs) {
+      if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
+        std::cerr << "oops" << std::endl;
       }
-
-      for (auto &f : fs) {
-        if (f.get<rdd_rpc::Response>() != rdd_rpc::Response::OK) {
-          std::cerr << "oops" << std::endl;
-        }
-      }
-
-      fs.clear();
     }
   } else if (shuffle_type == "fully-connected") {
     StartShuffleService();

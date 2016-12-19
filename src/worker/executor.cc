@@ -9,8 +9,7 @@
 #include "worker/key_values_rdd.h"
 #include "worker/shuffle/fully_connected_client.h"
 #include "worker/shuffle/fully_connected_server.h"
-#include "worker/shuffle/pairwise_shuffle_server.h"
-#include "worker/shuffle/pairwise_shuffle_client.h"
+#include "worker/shuffle/pairwise_shuffle_service.h"
 
 void Executor::dispatch(msgpack::rpc::request req) {
   std::string method;
@@ -32,6 +31,10 @@ void Executor::dispatch(msgpack::rpc::request req) {
     } else if (method == "map_combine") {
       // Map specified RDD (w/ combiner)
       req.result(MapCombine(req));
+
+    } else if (method == "pairwise_shuffle") {
+      // shuffle, act as a server
+      req.result(PairwiseShuffle(req));
 
     } else if (method == "shuffle_srv") {
       // shuffle, act as a server
@@ -74,7 +77,7 @@ void Executor::dispatch(msgpack::rpc::request req) {
 
 
 rdd_rpc::Response Executor::Hello(msgpack::rpc::request &req) {
-  ParseParams(req, my_executor_id_, executors_);
+  ParseParams(req, my_executor_id_, worker_contexts_);
   std::cerr << "my executor_id: " << my_executor_id_ << std::endl;
 
   return rdd_rpc::Response::OK;
@@ -188,24 +191,37 @@ rdd_rpc::Response Executor::MapCombine(msgpack::rpc::request &req) {
   return rdd_rpc::Response::OK;
 }
 
+rdd_rpc::Response Executor::PairwiseShuffle(msgpack::rpc::request &req) {
+  int rdd_id;
+  ParseParams(req, rdd_id);
+
+  SocketSessionAcceptor ssa;
+  if (!ssa.Init(worker_contexts_[my_executor_id_].GetShufflePort())) {
+    return rdd_rpc::Response::ERR;
+  }
+
+  PairwiseShuffleService pss(my_executor_id_, worker_contexts_, rdd_contexts_[rdd_id]);
+  if (!pss.Init(ssa)) {
+    return rdd_rpc::Response::ERR;
+  }
+  pss.Start(rdd_contexts_[rdd_id]);
+
+  return rdd_rpc::Response::OK;
+}
+
 rdd_rpc::Response Executor::ShuffleSrv(msgpack::rpc::request &req) {
   int rdd_id, client_id;
   std::string shuffle_type;
   ParseParams(req, shuffle_type, rdd_id, client_id);
 
-  if (shuffle_type == "pairwise") {
-    auto partition_ids = rdd_contexts_[rdd_id][client_id];
-
-    PairwiseShuffleServer shuffle_server(my_executor_id_);
-    shuffle_server.Start(partition_ids, executors_[my_executor_id_].GetDataPort());
-
-  } else if (shuffle_type == "fully-connected") {
+  if (shuffle_type == "fully-connected") {
     auto partitions_by_owner = rdd_contexts_[rdd_id];
     partitions_by_owner.erase(my_executor_id_);
 
     std::unique_ptr<FullyConnectedServer> shuffle_server(
-        new FullyConnectedServer(executors_[my_executor_id_].GetDataPort(), partitions_by_owner)
+        new FullyConnectedServer(partitions_by_owner)
     );
+    shuffle_server->Init(worker_contexts_[my_executor_id_].GetShufflePort());
 
     RDDEnv::GetInstance().RegisterShuffleService(std::move(shuffle_server));
   }
@@ -218,25 +234,19 @@ rdd_rpc::Response Executor::ShuffleCli(msgpack::rpc::request &req) {
   std::string shuffle_type;
   ParseParams(req, shuffle_type, rdd_id, server_id);
 
-  if (shuffle_type == "pairwise") {
-    auto partition_ids = rdd_contexts_[rdd_id][server_id];
-
-    PairwiseShuffleClient shuffle_client(my_executor_id_);
-    shuffle_client.Start(partition_ids, executors_[server_id].GetAddr(), executors_[server_id].GetDataPort());
-
-  } else if (shuffle_type == "fully-connected") {
-    auto partitions_by_owner = rdd_contexts_[rdd_id];
-
-    std::vector<std::pair<std::string, std::string>> executors;
-    partitions_by_owner.erase(my_executor_id_);
-    for (const auto &p : partitions_by_owner) {
+  if (shuffle_type == "fully-connected") {
+    std::vector<WorkerContext> worker_contexts;
+    for (const auto &p : rdd_contexts_[rdd_id]) {
       auto &owner_id = p.first;
-      executors.push_back(std::make_pair(executors_[owner_id].GetAddr(), executors_[owner_id].GetDataPort()));
+      if (owner_id != my_executor_id_) {
+        worker_contexts.push_back(worker_contexts_[owner_id]);
+      }
     }
 
     std::unique_ptr<FullyConnectedClient> shuffle_client(
-        new FullyConnectedClient(executors, my_executor_id_)
+        new FullyConnectedClient(my_executor_id_)
     );
+    shuffle_client->Init(worker_contexts);
 
     RDDEnv::GetInstance().RegisterShuffleService(std::move(shuffle_client));
   }
